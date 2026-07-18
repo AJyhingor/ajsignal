@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJ-Signal | Multi-Market RSI Scanner</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
+    --blue:#3b9dff; --blue-dim:#1c4a80; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
+    --text:#e6ebf2; --sub:#7c8aa0;
+    --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  body{min-height:100vh;padding:14px;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:linear-gradient(180deg,#0d1420,#0a0e14);border:1px solid var(--line);
+    border-radius:14px;padding:14px 18px;margin-bottom:14px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--sub);}
+  .dot.live{background:var(--green);box-shadow:0 0 10px 2px rgba(34,197,94,.7);}
+  h1{font-size:18px;margin:0;font-weight:700;}
+  header span.sub{font-size:11px;color:var(--sub);display:block;}
+  .conn{font-size:12px;color:var(--sub);text-align:right;}
+  .conn b{color:var(--text);display:block;font-size:13px;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+  .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--blue);margin:0 0 12px;font-weight:700;display:flex;gap:6px;align-items:center;}
+  .panel h2::before{content:"";width:3px;height:11px;background:var(--blue);border-radius:2px;}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;}
+  .row:last-child{margin-bottom:0;}
+  label{font-size:12px;color:var(--sub);}
+  input,select{
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;
+    padding:6px 8px;font-family:var(--mono);font-size:13px;width:64px;text-align:center;outline:none;
+  }
+  input:focus,select:focus{border-color:var(--blue);}
+  .btn{background:var(--blue-dim);color:#cfe6ff;border:1px solid var(--blue);border-radius:7px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .btn:hover{background:var(--blue);color:#04101d;}
+  .btn.small{padding:4px 9px;font-size:11px;}
+
+  .cat-block{margin-bottom:10px;}
+  .cat-title{font-size:12px;color:var(--text);font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between;}
+  .cat-syms{display:flex;flex-wrap:wrap;gap:5px;}
+  .sym-chip{
+    font-family:var(--mono);font-size:11px;padding:3px 7px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--sub);cursor:pointer;user-select:none;
+  }
+  .sym-chip.on{background:var(--blue-dim);border-color:var(--blue);color:#fff;}
+
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  thead th{text-align:left;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;padding:4px 6px;border-bottom:1px solid var(--line);}
+  tbody td{padding:5px 6px;border-bottom:1px solid #161d29;}
+  tbody tr:hover{background:#121a26;}
+  .buy{color:var(--green);font-weight:700;}
+  .sell{color:var(--red);font-weight:700;}
+  .tag-confirmed{color:var(--amber);font-size:10px;}
+  .scroll{max-height:220px;overflow-y:auto;}
+  .scroll::-webkit-scrollbar{width:6px;}
+  .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .empty{color:var(--sub);font-size:12px;text-align:center;padding:16px 0;}
+  .footnote{font-size:10px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.5;}
+  .toggle-line{display:flex;align-items:center;gap:8px;}
+  .sw{width:38px;height:20px;border-radius:20px;background:#1c2433;border:1px solid var(--line);position:relative;cursor:pointer;flex:none;}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#5c6779;transition:.2s;}
+  .sw.active{background:#123b25;border-color:var(--green);}
+  .sw.active::after{transform:translateX(18px);background:var(--green);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="dot" id="liveDot"></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub">Multi-Market RSI Scanner · 1H</span></div>
+    </div>
+    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 symbols watched</span></div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>Markets to Watch</h2>
+        <div id="marketsBody"><div class="empty">Loading symbol list…</div></div>
+        <div class="row" style="margin-top:8px;">
+          <label>Max symbols / category</label>
+          <input type="number" id="maxPerCatInp" value="6" min="1" max="20">
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" id="startBtn" style="flex:1;">▶ Start Watching</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Signal Settings</h2>
+        <div class="row"><label>Buy level (RSI)</label><input type="number" id="buyLevelInp" value="12" min="0" max="50"></div>
+        <div class="row"><label>Sell level (RSI)</label><input type="number" id="sellLevelInp" value="88" min="50" max="100"></div>
+        <div class="row"><label>EMA period (signal line)</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
+        <div class="row"><label>SMA period (confirm line)</label><input type="number" id="smaPeriodInp" value="20" min="2" max="100"></div>
+        <div class="row"><label>Lead-time window (min)</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="leadMinInp" value="5" min="1" max="30" style="width:48px;">
+            <span style="color:var(--sub);">–</span>
+            <input type="number" id="leadMaxInp" value="10" min="1" max="60" style="width:48px;">
+          </div>
+        </div>
+        <div class="row">
+          <div class="toggle-line"><label>Sound on signal</label></div>
+          <div class="sw active" id="soundToggle"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Active Approaches</h2>
+        <div class="scroll">
+          <table><thead><tr><th>Asset</th><th>Dir</th><th>Value</th><th>Est. min</th></tr></thead>
+          <tbody id="approachBody"></tbody></table>
+        </div>
+        <div class="empty" id="approachEmpty">No approaches within the lead-time window right now</div>
+      </div>
+
+      <div class="panel">
+        <h2>Signal Log</h2>
+        <div class="scroll">
+          <table><thead><tr><th>Time</th><th>Asset</th><th>Type</th><th>Note</th></tr></thead>
+          <tbody id="logBody"></tbody></table>
+        </div>
+        <div class="empty" id="logEmpty">No signals fired yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">Signals estimate the EMA(9)-of-RSI(1) line's projected time to reach your buy/sell levels, based on its recent slope — a heuristic, not a guarantee, since indicator lines don't move linearly. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const APP_ID = 117974;
+const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+
+const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
+const marketsBody=$('marketsBody'), maxPerCatInp=$('maxPerCatInp'), startBtn=$('startBtn');
+const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
+const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
+const leadMinInp=$('leadMinInp'), leadMaxInp=$('leadMaxInp');
+const soundToggle=$('soundToggle');
+const approachBody=$('approachBody'), approachEmpty=$('approachEmpty');
+const logBody=$('logBody'), logEmpty=$('logEmpty');
+
+let ws=null, reqCounter=1; const pending={};
+let soundOn=true;
+let categories={}; // market -> [symbols]
+let trackers={}; // symbol -> tracker object
+let watchedSymbols=[];
+let logEntries=[];
+
+function send(payload){
+  return new Promise((resolve,reject)=>{
+    if(!ws||ws.readyState!==1){reject(new Error('not connected'));return;}
+    const req_id=reqCounter++; payload.req_id=req_id;
+    pending[req_id]={resolve,reject};
+    ws.send(JSON.stringify(payload));
+  });
+}
+
+function connect(){
+  ws=new WebSocket(WS_URL);
+  ws.onopen=()=>{
+    liveDot.classList.add('live'); connLabel.textContent='Connected';
+    loadMarkets();
+  };
+  ws.onclose=()=>{ liveDot.classList.remove('live'); connLabel.textContent='Disconnected'; };
+  ws.onerror=()=>{ connLabel.textContent='Connection error'; };
+  ws.onmessage=(msg)=>{
+    let data; try{data=JSON.parse(msg.data);}catch(e){return;}
+    if(data.req_id && pending[data.req_id]){
+      const {resolve,reject}=pending[data.req_id]; delete pending[data.req_id];
+      if(data.error){reject(data.error);}else{resolve(data);}
+    }
+    if(data.msg_type==='tick' && data.tick){
+      const t=trackers[data.tick.symbol];
+      if(t){ if(t.forming.open==null) t.forming.open=Number(data.tick.quote); t.forming.close=Number(data.tick.quote); }
+    }
+  };
+}
+
+async function loadMarkets(){
+  try{
+    const resp = await send({active_symbols:"brief"});
+    const list = resp.active_symbols || [];
+    categories={};
+    list.forEach(s=>{
+      const mkt = s.market || 'other';
+      if(!categories[mkt]) categories[mkt]=[];
+      categories[mkt].push({symbol:s.underlying_symbol, name:s.underlying_symbol_name || s.underlying_symbol});
+    });
+    renderMarketPicker();
+  }catch(err){
+    marketsBody.innerHTML = `<div class="empty">Could not load symbol list: ${JSON.stringify(err)}</div>`;
+  }
+}
+
+function renderMarketPicker(){
+  const niceName = {synthetic_index:'Volatility Indices',forex:'Forex',cryptocurrency:'Crypto',
+    commodities:'Metals / Commodities',indices:'Stock Indices'};
+  const order = ['synthetic_index','forex','cryptocurrency','commodities','indices'];
+  const others = Object.keys(categories).filter(k=>!order.includes(k));
+  const allCats = order.filter(k=>categories[k]).concat(others);
+
+  marketsBody.innerHTML = allCats.map(cat=>{
+    const syms = categories[cat];
+    const label = niceName[cat] || cat;
+    return `<div class="cat-block" data-cat="${cat}">
+      <div class="cat-title"><span>${label} (${syms.length})</span>
+        <span><button class="btn small cat-all" data-cat="${cat}">all</button>
+        <button class="btn small cat-none" data-cat="${cat}">none</button></span>
+      </div>
+      <div class="cat-syms">
+        ${syms.map(s=>`<div class="sym-chip on" data-cat="${cat}" data-sym="${s.symbol}" title="${s.name}">${s.symbol}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  marketsBody.querySelectorAll('.sym-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=> chip.classList.toggle('on'));
+  });
+  marketsBody.querySelectorAll('.cat-all').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      marketsBody.querySelectorAll(`.sym-chip[data-cat="${b.dataset.cat}"]`).forEach(c=>c.classList.add('on'));
+    });
+  });
+  marketsBody.querySelectorAll('.cat-none').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      marketsBody.querySelectorAll(`.sym-chip[data-cat="${b.dataset.cat}"]`).forEach(c=>c.classList.remove('on'));
+    });
+  });
+}
+
+function getSelectedSymbols(){
+  const maxPerCat = Math.max(1, parseInt(maxPerCatInp.value)||6);
+  const byCat={};
+  marketsBody.querySelectorAll('.sym-chip.on').forEach(chip=>{
+    const cat=chip.dataset.cat;
+    if(!byCat[cat]) byCat[cat]=[];
+    if(byCat[cat].length<maxPerCat) byCat[cat].push(chip.dataset.sym);
+  });
+  return Object.values(byCat).flat();
+}
+
+// ---------- RSI / EMA / SMA math ----------
+function rawRsiPoint(close, prevClose){
+  if(close>prevClose) return 100;
+  if(close<prevClose) return 0;
+  return 50;
+}
+function emaStep(value, prevEma, period){
+  const k = 2/(period+1);
+  return value*k + prevEma*(1-k);
+}
+
+async function seedSymbol(symbol){
+  const emaPeriod = parseInt(emaPeriodInp.value)||9;
+  const smaPeriod = parseInt(smaPeriodInp.value)||20;
+  try{
+    const resp = await send({ticks_history:symbol, style:"candles", granularity:3600, count: Math.max(60, smaPeriod+30), end:"latest"});
+    const candles = resp.candles || [];
+    if(candles.length<smaPeriod+2) return null;
+    const closes = candles.map(c=>Number(c.close));
+    const rawArr=[];
+    for(let i=1;i<closes.length;i++) rawArr.push(rawRsiPoint(closes[i], closes[i-1]));
+
+    // seed EMA with simple average of first `emaPeriod` raw values
+    let ema = rawArr.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
+    for(let i=emaPeriod;i<rawArr.length;i++) ema = emaStep(rawArr[i], ema, emaPeriod);
+
+    const smaWindow = rawArr.slice(-smaPeriod);
+    const sma = smaWindow.reduce((a,b)=>a+b,0)/smaWindow.length;
+
+    const lastEpoch = candles[candles.length-1].epoch;
+    const nextHourStart = lastEpoch + 3600;
+
+    return {
+      symbol,
+      lastFinalizedClose: closes[closes.length-1],
+      emaVal: ema,
+      smaWindow: smaWindow,
+      smaVal: sma,
+      forming: { startEpoch: nextHourStart, open:null, close:null },
+      slopeSamples: [],
+      alertedHeadsUp: {buy:false, sell:false},
+      alertedConfirmed: {buy:false, sell:false},
+      lastScannedEma: ema,
+      lastScannedSma: sma
+    };
+  }catch(err){
+    console.warn('Seed failed for', symbol, err);
+    return null;
+  }
+}
+
+async function startWatching(){
+  startBtn.disabled = true; startBtn.textContent = 'Loading…';
+  watchedSymbols = getSelectedSymbols();
+  trackers = {};
+  for(const sym of watchedSymbols){
+    const tr = await seedSymbol(sym);
+    if(tr){
+      trackers[sym]=tr;
+      ws.send(JSON.stringify({ticks:sym, subscribe:1}));
+    }
+    await new Promise(r=>setTimeout(r,60)); // pace requests gently
+  }
+  symCount.textContent = Object.keys(trackers).length + ' symbols watched';
+  startBtn.disabled=false; startBtn.textContent='▶ Restart Watching';
+}
+
+// ---------- Live scan loop ----------
+function beep(){
+  if(!soundOn) return;
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.start(); setTimeout(()=>{o.stop(); ctx.close();}, 220);
+  }catch(e){}
+}
+
+function logSignal(symbol, type, note){
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logEntries.unshift({time, symbol, type, note});
+  if(logEntries.length>300) logEntries.pop();
+  renderLog();
+  beep();
+}
+
+function renderLog(){
+  logEmpty.style.display = logEntries.length ? 'none':'block';
+  logBody.innerHTML = logEntries.slice(0,80).map(e=>`
+    <tr><td>${e.time}</td><td>${e.symbol}</td>
+    <td class="${e.type==='BUY'?'buy':'sell'}">${e.type}</td>
+    <td>${e.note}</td></tr>`).join('');
+}
+
+function scanAll(){
+  const buyLevel = parseFloat(buyLevelInp.value)||12;
+  const sellLevel = parseFloat(sellLevelInp.value)||88;
+  const emaPeriod = parseInt(emaPeriodInp.value)||9;
+  const leadMin = parseFloat(leadMinInp.value)||5;
+  const leadMax = parseFloat(leadMaxInp.value)||10;
+  const now = Date.now();
+  const approaches=[];
+
+  Object.values(trackers).forEach(t=>{
+    if(t.forming.close==null) return;
+    const rawLive = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
+    const liveEma = emaStep(rawLive, t.emaVal, emaPeriod);
+    const liveSmaWindow = t.smaWindow.slice(1).concat([rawLive]);
+    const liveSma = liveSmaWindow.reduce((a,b)=>a+b,0)/liveSmaWindow.length;
+
+    // slope tracking (keep ~12 min of samples)
+    t.slopeSamples.push({time:now, v:liveEma});
+    t.slopeSamples = t.slopeSamples.filter(s=> now-s.time <= 12*60*1000);
+
+    // confirmed cross detection
+    const prevEma = t.lastScannedEma;
+    if(liveEma>=sellLevel && prevEma<sellLevel && !t.alertedConfirmed.sell){
+      const reversal = (liveEma>liveSma) && !(prevEma>t.lastScannedSma);
+      logSignal(t.symbol,'SELL', reversal? 'Confirmed reversal (EMA crossed SMA)':'Confirmed touch of '+sellLevel);
+      t.alertedConfirmed.sell=true;
+    }
+    if(liveEma<=buyLevel && prevEma>buyLevel && !t.alertedConfirmed.buy){
+      const reversal = (liveEma<liveSma) && !(prevEma<t.lastScannedSma);
+      logSignal(t.symbol,'BUY', reversal? 'Confirmed reversal (EMA crossed SMA)':'Confirmed touch of '+buyLevel);
+      t.alertedConfirmed.buy=true;
+    }
+
+    // predictive heads-up based on recent slope
+    if(t.slopeSamples.length>=2){
+      const first=t.slopeSamples[0], last=t.slopeSamples[t.slopeSamples.length-1];
+      const dtMin = (last.time-first.time)/60000;
+      if(dtMin>0.4){
+        const slopePerMin = (last.v-first.v)/dtMin;
+        if(slopePerMin>0.05 && liveEma<sellLevel){
+          const eta = (sellLevel-liveEma)/slopePerMin;
+          if(eta<=leadMax){
+            approaches.push({symbol:t.symbol,dir:'SELL',val:liveEma.toFixed(1),eta:eta.toFixed(1)});
+            if(eta>=leadMin && !t.alertedHeadsUp.sell){
+              logSignal(t.symbol,'SELL','Heads up — est. '+eta.toFixed(1)+' min to '+sellLevel);
+              t.alertedHeadsUp.sell=true;
+            }
+          }
+        }
+        if(slopePerMin<-0.05 && liveEma>buyLevel){
+          const eta = (liveEma-buyLevel)/(-slopePerMin);
+          if(eta<=leadMax){
+            approaches.push({symbol:t.symbol,dir:'BUY',val:liveEma.toFixed(1),eta:eta.toFixed(1)});
+            if(eta>=leadMin && !t.alertedHeadsUp.buy){
+              logSignal(t.symbol,'BUY','Heads up — est. '+eta.toFixed(1)+' min to '+buyLevel);
+              t.alertedHeadsUp.buy=true;
+            }
+          }
+        }
+      }
+    }
+
+    t.lastScannedEma=liveEma; t.lastScannedSma=liveSma;
+  });
+
+  approaches.sort((a,b)=>parseFloat(a.eta)-parseFloat(b.eta));
+  approachEmpty.style.display = approaches.length ? 'none':'block';
+  approachBody.innerHTML = approaches.slice(0,30).map(a=>`
+    <tr><td>${a.symbol}</td><td class="${a.dir==='BUY'?'buy':'sell'}">${a.dir}</td>
+    <td>${a.val}</td><td>${a.eta}</td></tr>`).join('');
+}
+
+function checkRollover(){
+  const nowHourStart = Math.floor(Date.now()/1000/3600)*3600;
+  const emaPeriod = parseInt(emaPeriodInp.value)||9;
+  const smaPeriod = parseInt(smaPeriodInp.value)||20;
+  Object.values(trackers).forEach(t=>{
+    if(t.forming.startEpoch < nowHourStart && t.forming.close!=null){
+      const rawFinal = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
+      t.emaVal = emaStep(rawFinal, t.emaVal, emaPeriod);
+      t.smaWindow = t.smaWindow.slice(1).concat([rawFinal]);
+      t.smaVal = t.smaWindow.reduce((a,b)=>a+b,0)/t.smaWindow.length;
+      t.lastFinalizedClose = t.forming.close;
+      t.forming = {startEpoch: nowHourStart+3600, open:null, close:null};
+      t.slopeSamples=[];
+      t.alertedHeadsUp={buy:false,sell:false};
+      t.alertedConfirmed={buy:false,sell:false};
+      t.lastScannedEma=t.emaVal; t.lastScannedSma=t.smaVal;
+    }
+  });
+}
+
+// ---------- wiring ----------
+startBtn.addEventListener('click', startWatching);
+soundToggle.addEventListener('click', ()=>{
+  soundOn=!soundOn; soundToggle.classList.toggle('active', soundOn);
+});
+setInterval(scanAll, 5000);
+setInterval(checkRollover, 30000);
+
+connect();
+})();
+</script>
+</body>
+</html>
