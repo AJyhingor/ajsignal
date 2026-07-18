@@ -207,7 +207,9 @@ async function loadMarkets(){
     list.forEach(s=>{
       const mkt = s.market || 'other';
       if(!categories[mkt]) categories[mkt]=[];
-      categories[mkt].push({symbol:s.underlying_symbol, name:s.underlying_symbol_name || s.underlying_symbol});
+      const sym = s.underlying_symbol || s.symbol;
+      const nm = s.underlying_symbol_name || s.display_name || sym;
+      categories[mkt].push({symbol:sym, name:nm});
     });
     renderMarketPicker();
   }catch(err){
