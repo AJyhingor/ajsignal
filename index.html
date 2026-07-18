@@ -33,8 +33,11 @@
   @media(max-width:900px){.grid{grid-template-columns:1fr;}}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
-  .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--blue);margin:0 0 12px;font-weight:700;display:flex;gap:6px;align-items:center;}
+  .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--blue);margin:0 0 12px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:default;}
   .panel h2::before{content:"";width:3px;height:11px;background:var(--blue);border-radius:2px;}
+  .panel h2.clickable{cursor:pointer;justify-content:space-between;}
+  .caret{transition:transform .15s;font-size:12px;}
+  .caret.closed{transform:rotate(-90deg);}
 
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;}
   .row:last-child{margin-bottom:0;}
@@ -49,14 +52,9 @@
   .btn:hover{background:var(--blue);color:#04101d;}
   .btn.small{padding:4px 9px;font-size:11px;}
 
-  .cat-block{margin-bottom:10px;}
-  .cat-title{font-size:12px;color:var(--text);font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between;}
-  .cat-syms{display:flex;flex-wrap:wrap;gap:5px;}
-  .sym-chip{
-    font-family:var(--mono);font-size:11px;padding:3px 7px;border-radius:12px;border:1px solid var(--line);
-    background:var(--panel2);color:var(--sub);cursor:pointer;user-select:none;
-  }
-  .sym-chip.on{background:var(--blue-dim);border-color:var(--blue);color:#fff;}
+  .market-status{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #161d29;}
+  .market-status .ok{color:var(--green);}
+  .market-status .bad{color:var(--red);}
 
   table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
   thead th{text-align:left;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;padding:4px 6px;border-bottom:1px solid var(--line);}
@@ -64,7 +62,6 @@
   tbody tr:hover{background:#121a26;}
   .buy{color:var(--green);font-weight:700;}
   .sell{color:var(--red);font-weight:700;}
-  .tag-confirmed{color:var(--amber);font-size:10px;}
   .scroll{max-height:220px;overflow-y:auto;}
   .scroll::-webkit-scrollbar{width:6px;}
   .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
@@ -75,6 +72,15 @@
   .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#5c6779;transition:.2s;}
   .sw.active{background:#123b25;border-color:var(--green);}
   .sw.active::after{transform:translateX(18px);background:var(--green);}
+
+  .mkt-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--panel2);}
+  .mkt-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+  .mkt-name{font-weight:700;font-size:13px;}
+  .mkt-tf{font-size:10px;color:var(--sub);font-family:var(--mono);}
+  .mkt-vals{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:4px;font-family:var(--mono);}
+  .mkt-vals b{color:var(--text);}
+  .ema-txt{color:var(--blue);}
+  .sma-txt{color:var(--red);}
 </style>
 </head>
 <body>
@@ -83,25 +89,13 @@
   <header>
     <div class="brand">
       <div class="dot" id="liveDot"></div>
-      <div><h1>AJ-SIGNAL</h1><span class="sub">Multi-Market RSI Scanner · 1H</span></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub" id="tfLabel">Multi-Market RSI Scanner · —</span></div>
     </div>
-    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 symbols watched</span></div>
+    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 13 markets ready</span></div>
   </header>
 
   <div class="grid">
     <div>
-      <div class="panel">
-        <h2>Markets to Watch</h2>
-        <div id="marketsBody"><div class="empty">Loading symbol list…</div></div>
-        <div class="row" style="margin-top:8px;">
-          <label>Max symbols / category</label>
-          <input type="number" id="maxPerCatInp" value="6" min="1" max="20">
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn" id="startBtn" style="flex:1;">▶ Start Watching</button>
-        </div>
-      </div>
-
       <div class="panel">
         <h2>Signal Settings</h2>
         <div class="row"><label>Timeframe</label>
@@ -130,17 +124,18 @@
           <div class="toggle-line"><label>Sound on signal</label></div>
           <div class="sw active" id="soundToggle"></div>
         </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" id="startBtn" style="flex:1;">▶ Start / Restart Watching</button>
+        </div>
       </div>
     </div>
 
     <div>
       <div class="panel">
-        <h2>Watchlist (live values)</h2>
-        <div class="scroll">
-          <table><thead><tr><th>Asset</th><th>Last-closed EMA</th><th>Live EMA</th><th>Trend</th></tr></thead>
-          <tbody id="watchBody"></tbody></table>
+        <h2 class="clickable" id="liveMarketsToggle">Live Markets <span class="caret" id="liveMarketsCaret">▽</span></h2>
+        <div class="scroll" id="liveMarketsBody" style="max-height:520px;">
+          <div class="empty" id="liveMarketsEmpty">Tap Start Watching to begin</div>
         </div>
-        <div class="empty" id="watchEmpty">Tap Start Watching to begin</div>
       </div>
 
       <div class="panel">
@@ -163,7 +158,7 @@
     </div>
   </div>
 
-  <div class="footnote">Signals estimate the EMA(9)-of-RSI(1) line's projected time to reach your buy/sell levels, based on its recent slope — a heuristic, not a guarantee, since indicator lines don't move linearly. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="footnote">Signals estimate the EMA(9)-of-RSI(1) line's projected time to reach your buy/sell levels, based on its recent slope — a heuristic, not a guarantee, since indicator lines don't move linearly. The "Last-closed" value in each market card only updates once a bar actually closes, so it's directly comparable to what your MT5 chart shows. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -173,23 +168,45 @@ const $=id=>document.getElementById(id);
 const APP_ID = 117974;
 const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
-const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
-const marketsBody=$('marketsBody'), maxPerCatInp=$('maxPerCatInp'), startBtn=$('startBtn');
+const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount'), tfLabel=$('tfLabel');
+const startBtn=$('startBtn');
 const timeframeSel=$('timeframeSel');
 const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
 const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
 const leadMinInp=$('leadMinInp'), leadMaxInp=$('leadMaxInp');
 const soundToggle=$('soundToggle');
 const approachBody=$('approachBody'), approachEmpty=$('approachEmpty');
-const watchBody=$('watchBody'), watchEmpty=$('watchEmpty');
+const liveMarketsBody=$('liveMarketsBody'), liveMarketsEmpty=$('liveMarketsEmpty');
+const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsCaret');
 const logBody=$('logBody'), logEmpty=$('logEmpty');
+
+const TF_LABELS = {60:'1 min',300:'5 min',900:'15 min',1800:'30 min',3600:'1H',14400:'4H',86400:'D1'};
+
+// The 13 fixed markets. `patterns` = substrings to look for in the symbol's
+// display name (case-insensitive, all must match) to find it in Deriv's live list.
+const TARGET_MARKETS = [
+  {label:'Volatility 100 Index', patterns:['volatility 100'], avoid:['1s']},
+  {label:'Volatility 75 Index',  patterns:['volatility 75'],  avoid:['1s']},
+  {label:'Gold (XAUUSD)',        patterns:['gold']},
+  {label:'GBP/JPY',              patterns:['gbp/jpy']},
+  {label:'Volatility 50 Index',  patterns:['volatility 50'],  avoid:['1s']},
+  {label:'US 100 (NASDAQ)',      patterns:['us 100']},
+  {label:'BTC/USD (Bitcoin)',    patterns:['btc/usd']},
+  {label:'GBP/USD',              patterns:['gbp/usd']},
+  {label:'EUR/USD',              patterns:['eur/usd']},
+  {label:'Wall Street 30 (US30)',patterns:['wall street']},
+  {label:'USD/JPY',              patterns:['usd/jpy']},
+  {label:'Volatility 25 Index',  patterns:['volatility 25'],  avoid:['1s']},
+  {label:'Volatility 10 Index',  patterns:['volatility 10'],  avoid:['1s']}
+];
 
 let ws=null, reqCounter=1; const pending={};
 let soundOn=true;
-let categories={}; // market -> [symbols]
-let trackers={}; // symbol -> tracker object
-let watchedSymbols=[];
+let trackers={}; // symbol -> tracker
+let resolvedMarkets=[]; // {label, symbol, found}
 let logEntries=[];
+let activeGranularity=3600;
+let liveMarketsOpen=true;
 
 function send(payload){
   return new Promise((resolve,reject)=>{
@@ -204,7 +221,7 @@ function connect(){
   ws=new WebSocket(WS_URL);
   ws.onopen=()=>{
     liveDot.classList.add('live'); connLabel.textContent='Connected';
-    loadMarkets();
+    resolveMarkets();
   };
   ws.onclose=()=>{ liveDot.classList.remove('live'); connLabel.textContent='Disconnected'; };
   ws.onerror=()=>{ connLabel.textContent='Connection error'; };
@@ -221,69 +238,37 @@ function connect(){
   };
 }
 
-async function loadMarkets(){
+async function resolveMarkets(){
   try{
     const resp = await send({active_symbols:"brief"});
     const list = resp.active_symbols || [];
-    categories={};
-    list.forEach(s=>{
-      const mkt = s.market || 'other';
-      if(!categories[mkt]) categories[mkt]=[];
+    const normalized = list.map(s=>{
       const sym = s.underlying_symbol || s.symbol;
       const nm = s.underlying_symbol_name || s.display_name || sym;
-      categories[mkt].push({symbol:sym, name:nm});
+      return {symbol:sym, name:nm, nameLower:(nm||'').toLowerCase()};
     });
-    renderMarketPicker();
+
+    resolvedMarkets = TARGET_MARKETS.map(target=>{
+      const avoid = target.avoid||[];
+      const match = normalized.find(s=>
+        target.patterns.every(p=>s.nameLower.includes(p)) &&
+        !avoid.some(a=>s.nameLower.includes(a))
+      );
+      return {label:target.label, symbol: match?match.symbol:null, name: match?match.name:null, found:!!match};
+    });
+
+    updateSymCount();
+    startWatching(); // auto-start once resolved
   }catch(err){
-    marketsBody.innerHTML = `<div class="empty">Could not load symbol list: ${JSON.stringify(err)}</div>`;
+    connLabel.textContent = 'Symbol list failed';
+    console.error('Could not load symbol list:', err);
   }
 }
 
-function renderMarketPicker(){
-  const niceName = {synthetic_index:'Volatility Indices',forex:'Forex',cryptocurrency:'Crypto',
-    commodities:'Metals / Commodities',indices:'Stock Indices'};
-  const order = ['synthetic_index','forex','cryptocurrency','commodities','indices'];
-  const others = Object.keys(categories).filter(k=>!order.includes(k));
-  const allCats = order.filter(k=>categories[k]).concat(others);
-
-  marketsBody.innerHTML = allCats.map(cat=>{
-    const syms = categories[cat];
-    const label = niceName[cat] || cat;
-    return `<div class="cat-block" data-cat="${cat}">
-      <div class="cat-title"><span>${label} (${syms.length})</span>
-        <span><button class="btn small cat-all" data-cat="${cat}">all</button>
-        <button class="btn small cat-none" data-cat="${cat}">none</button></span>
-      </div>
-      <div class="cat-syms">
-        ${syms.map(s=>`<div class="sym-chip on" data-cat="${cat}" data-sym="${s.symbol}" title="${s.name}">${s.symbol}</div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  marketsBody.querySelectorAll('.sym-chip').forEach(chip=>{
-    chip.addEventListener('click', ()=> chip.classList.toggle('on'));
-  });
-  marketsBody.querySelectorAll('.cat-all').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      marketsBody.querySelectorAll(`.sym-chip[data-cat="${b.dataset.cat}"]`).forEach(c=>c.classList.add('on'));
-    });
-  });
-  marketsBody.querySelectorAll('.cat-none').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      marketsBody.querySelectorAll(`.sym-chip[data-cat="${b.dataset.cat}"]`).forEach(c=>c.classList.remove('on'));
-    });
-  });
-}
-
-function getSelectedSymbols(){
-  const maxPerCat = Math.max(1, parseInt(maxPerCatInp.value)||6);
-  const byCat={};
-  marketsBody.querySelectorAll('.sym-chip.on').forEach(chip=>{
-    const cat=chip.dataset.cat;
-    if(!byCat[cat]) byCat[cat]=[];
-    if(byCat[cat].length<maxPerCat) byCat[cat].push(chip.dataset.sym);
-  });
-  return Object.values(byCat).flat();
+function updateSymCount(){
+  const foundCount = resolvedMarkets.filter(m=>m.found).length;
+  const missing = resolvedMarkets.filter(m=>!m.found).map(m=>m.label);
+  symCount.textContent = `${foundCount} / 13 markets ready` + (missing.length? ' (missing: '+missing.join(', ')+')' : '');
 }
 
 // ---------- RSI / EMA / SMA math ----------
@@ -300,21 +285,28 @@ function emaStep(value, prevEma, period){
 async function seedSymbol(symbol){
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   const smaPeriod = parseInt(smaPeriodInp.value)||20;
+  const granularity = activeGranularity;
   try{
-    const granularity = parseInt(timeframeSel.value)||3600;
-    const resp = await send({ticks_history:symbol, style:"candles", granularity:granularity, count: Math.max(60, smaPeriod+30), end:"latest"});
+    const resp = await send({ticks_history:symbol, style:"candles", granularity:granularity, count: Math.max(80, smaPeriod+40), end:"latest"});
     const candles = resp.candles || [];
     if(candles.length<smaPeriod+2) return null;
     const closes = candles.map(c=>Number(c.close));
     const rawArr=[];
     for(let i=1;i<closes.length;i++) rawArr.push(rawRsiPoint(closes[i], closes[i-1]));
 
-    // seed EMA with simple average of first `emaPeriod` raw values
     let ema = rawArr.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
-    for(let i=emaPeriod;i<rawArr.length;i++) ema = emaStep(rawArr[i], ema, emaPeriod);
-
-    const smaWindow = rawArr.slice(-smaPeriod);
-    const sma = smaWindow.reduce((a,b)=>a+b,0)/smaWindow.length;
+    const history=[]; // rolling {ema,sma} per finalized bar, for the mini chart
+    let smaWindow = rawArr.slice(0,smaPeriod);
+    for(let i=emaPeriod;i<rawArr.length;i++){
+      ema = emaStep(rawArr[i], ema, emaPeriod);
+      if(i>=smaPeriod-1){
+        smaWindow = rawArr.slice(Math.max(0,i-smaPeriod+1), i+1);
+        const smaNow = smaWindow.reduce((a,b)=>a+b,0)/smaWindow.length;
+        history.push({ema, sma:smaNow});
+      }
+    }
+    const finalSmaWindow = rawArr.slice(-smaPeriod);
+    const sma = finalSmaWindow.reduce((a,b)=>a+b,0)/finalSmaWindow.length;
 
     const lastEpoch = candles[candles.length-1].epoch;
     const nextBarStart = lastEpoch + granularity;
@@ -323,8 +315,9 @@ async function seedSymbol(symbol){
       symbol,
       lastFinalizedClose: closes[closes.length-1],
       emaVal: ema,
-      smaWindow: smaWindow,
+      smaWindow: finalSmaWindow,
       smaVal: sma,
+      history: history.slice(-40),
       forming: { startEpoch: nextBarStart, open:null, close:null },
       slopeSamples: [],
       alertedHeadsUp: {buy:false, sell:false},
@@ -340,40 +333,56 @@ async function seedSymbol(symbol){
 
 async function startWatching(){
   startBtn.disabled = true; startBtn.textContent = 'Loading…';
-  watchedSymbols = getSelectedSymbols();
+  activeGranularity = parseInt(timeframeSel.value)||3600;
+  tfLabel.textContent = 'Multi-Market RSI Scanner · ' + (TF_LABELS[activeGranularity]||activeGranularity+'s');
   trackers = {};
-  for(const sym of watchedSymbols){
+  const symbols = resolvedMarkets.filter(m=>m.found).map(m=>m.symbol);
+  for(const sym of symbols){
     const tr = await seedSymbol(sym);
     if(tr){
       trackers[sym]=tr;
       ws.send(JSON.stringify({ticks:sym, subscribe:1}));
     }
-    await new Promise(r=>setTimeout(r,60)); // pace requests gently
+    await new Promise(r=>setTimeout(r,60));
   }
-  symCount.textContent = Object.keys(trackers).length + ' symbols watched';
-  startBtn.disabled=false; startBtn.textContent='▶ Restart Watching';
+  startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching';
 }
 
-// ---------- Live scan loop ----------
+// ---------- alerts ----------
+let currentAlarmCtx=null;
 function beep(){
   if(!soundOn) return;
   try{
+    if(currentAlarmCtx){ try{currentAlarmCtx.close();}catch(e){} }
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = 880; g.gain.value = 0.15;
-    o.start(); setTimeout(()=>{o.stop(); ctx.close();}, 220);
+    currentAlarmCtx = ctx;
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0.9;
+    gainNode.connect(ctx.destination);
+
+    const duration = 30;       // total alarm length in seconds
+    const beepLen = 0.35, gapLen = 0.15;
+    const cycle = beepLen+gapLen;
+    const cycles = Math.floor(duration/cycle);
+    let t = ctx.currentTime;
+    for(let i=0;i<cycles;i++){
+      const osc = ctx.createOscillator();
+      osc.type = 'square'; // sharper, more attention-grabbing than a sine tone
+      osc.frequency.value = (i%2===0) ? 1200 : 850;
+      osc.connect(gainNode);
+      osc.start(t);
+      osc.stop(t+beepLen);
+      t += cycle;
+    }
+    setTimeout(()=>{ try{ctx.close();}catch(e){} }, duration*1000+500);
   }catch(e){}
 }
-
 function logSignal(symbol, type, note){
   const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
   logEntries.unshift({time, symbol, type, note});
   if(logEntries.length>300) logEntries.pop();
-  renderLog();
-  beep();
+  renderLog(); beep();
 }
-
 function renderLog(){
   logEmpty.style.display = logEntries.length ? 'none':'block';
   logBody.innerHTML = logEntries.slice(0,80).map(e=>`
@@ -382,7 +391,44 @@ function renderLog(){
     <td>${e.note}</td></tr>`).join('');
 }
 
+// ---------- mini chart (SVG) for each market ----------
+function miniChartSvg(history, liveEma, liveSma, buyLevel, sellLevel){
+  const W=280, H=70, pad=4;
+  const pts = history.slice(-24).concat([{ema:liveEma, sma:liveSma}]);
+  const n = pts.length;
+  const scaleY = v => H - pad - ((v-0)/(100-0))*(H-2*pad);
+  const scaleX = i => pad + (i/(Math.max(n-1,1)))*(W-2*pad);
+  const emaPts = pts.map((p,i)=>`${scaleX(i)},${scaleY(p.ema)}`).join(' ');
+  const smaPts = pts.map((p,i)=>`${scaleX(i)},${scaleY(p.sma)}`).join(' ');
+  const yBuy = scaleY(buyLevel), ySell = scaleY(sellLevel);
+  return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <line x1="0" y1="${ySell}" x2="${W}" y2="${ySell}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
+    <line x1="0" y1="${yBuy}" x2="${W}" y2="${yBuy}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
+    <polyline points="${smaPts}" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+    <polyline points="${emaPts}" fill="none" stroke="#3b9dff" stroke-width="1.8"/>
+  </svg>`;
+}
+
+function renderLiveMarkets(rows){
+  liveMarketsEmpty.style.display = rows.length ? 'none':'block';
+  liveMarketsBody.innerHTML = rows.map(r=>`
+    <div class="mkt-card">
+      <div class="mkt-head">
+        <span class="mkt-name">${r.symbol}</span>
+        <span class="mkt-tf">${TF_LABELS[activeGranularity]||''}</span>
+      </div>
+      ${miniChartSvg(r.history, r.liveEma, r.liveSma, r.buyLevel, r.sellLevel)}
+      <div class="mkt-vals">
+        <span>EMA9 <b class="ema-txt">${r.liveEma.toFixed(1)}</b></span>
+        <span>SMA20 <b class="sma-txt">${r.liveSma.toFixed(1)}</b></span>
+        <span>Last-closed <b>${r.lastClosedEma.toFixed(1)}</b></span>
+      </div>
+    </div>`).join('');
+}
+
+// ---------- live scan loop ----------
 function scanAll(){
+  if(!liveMarketsOpen) return;
   const buyLevel = parseFloat(buyLevelInp.value)||12;
   const sellLevel = parseFloat(sellLevelInp.value)||88;
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
@@ -390,7 +436,7 @@ function scanAll(){
   const leadMax = parseFloat(leadMaxInp.value)||10;
   const now = Date.now();
   const approaches=[];
-  const watchRows=[];
+  const cardRows=[];
 
   Object.values(trackers).forEach(t=>{
     if(t.forming.close==null) return;
@@ -399,18 +445,14 @@ function scanAll(){
     const liveSmaWindow = t.smaWindow.slice(1).concat([rawLive]);
     const liveSma = liveSmaWindow.reduce((a,b)=>a+b,0)/liveSmaWindow.length;
 
-    // slope tracking (keep ~12 min of samples)
     t.slopeSamples.push({time:now, v:liveEma});
     t.slopeSamples = t.slopeSamples.filter(s=> now-s.time <= 12*60*1000);
 
-    watchRows.push({
-      symbol:t.symbol,
-      lastClosed:t.emaVal.toFixed(1),
-      live:liveEma.toFixed(1),
-      trend: liveEma>t.emaVal ? '▲' : (liveEma<t.emaVal ? '▼' : '–')
+    cardRows.push({
+      symbol:t.symbol, history:t.history, liveEma, liveSma,
+      lastClosedEma:t.emaVal, buyLevel, sellLevel
     });
 
-    // confirmed cross detection
     const prevEma = t.lastScannedEma;
     if(liveEma>=sellLevel && prevEma<sellLevel && !t.alertedConfirmed.sell){
       const reversal = (liveEma>liveSma) && !(prevEma>t.lastScannedSma);
@@ -423,8 +465,6 @@ function scanAll(){
       t.alertedConfirmed.buy=true;
     }
 
-    // predictive heads-up — require at least 3 samples over a real stretch of time
-    // to avoid single noisy ticks producing a false "X minutes away" projection
     if(t.slopeSamples.length>=3){
       const first=t.slopeSamples[0], last=t.slopeSamples[t.slopeSamples.length-1];
       const dtMin = (last.time-first.time)/60000;
@@ -452,7 +492,6 @@ function scanAll(){
         }
       }
     }
-
     t.lastScannedEma=liveEma; t.lastScannedSma=liveSma;
   });
 
@@ -462,23 +501,22 @@ function scanAll(){
     <tr><td>${a.symbol}</td><td class="${a.dir==='BUY'?'buy':'sell'}">${a.dir}</td>
     <td>${a.val}</td><td>${a.eta}</td></tr>`).join('');
 
-  watchRows.sort((a,b)=> a.symbol.localeCompare(b.symbol));
-  watchEmpty.style.display = watchRows.length ? 'none':'block';
-  watchBody.innerHTML = watchRows.map(w=>`
-    <tr><td>${w.symbol}</td><td>${w.lastClosed}</td><td>${w.live}</td><td>${w.trend}</td></tr>`).join('');
+  cardRows.sort((a,b)=>a.symbol.localeCompare(b.symbol));
+  renderLiveMarkets(cardRows);
 }
 
 function checkRollover(){
-  const granularity = parseInt(timeframeSel.value)||3600;
+  const granularity = activeGranularity;
   const nowBarStart = Math.floor(Date.now()/1000/granularity)*granularity;
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
-  const smaPeriod = parseInt(smaPeriodInp.value)||20;
   Object.values(trackers).forEach(t=>{
     if(t.forming.startEpoch < nowBarStart && t.forming.close!=null){
       const rawFinal = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
       t.emaVal = emaStep(rawFinal, t.emaVal, emaPeriod);
       t.smaWindow = t.smaWindow.slice(1).concat([rawFinal]);
       t.smaVal = t.smaWindow.reduce((a,b)=>a+b,0)/t.smaWindow.length;
+      t.history.push({ema:t.emaVal, sma:t.smaVal});
+      if(t.history.length>40) t.history.shift();
       t.lastFinalizedClose = t.forming.close;
       t.forming = {startEpoch: nowBarStart+granularity, open:null, close:null};
       t.slopeSamples=[];
@@ -493,6 +531,12 @@ function checkRollover(){
 startBtn.addEventListener('click', startWatching);
 soundToggle.addEventListener('click', ()=>{
   soundOn=!soundOn; soundToggle.classList.toggle('active', soundOn);
+});
+liveMarketsToggle.addEventListener('click', ()=>{
+  liveMarketsOpen = !liveMarketsOpen;
+  liveMarketsBody.style.display = liveMarketsOpen ? 'block':'none';
+  liveMarketsCaret.classList.toggle('closed', !liveMarketsOpen);
+  liveMarketsCaret.textContent = liveMarketsOpen ? '▽' : '▷';
 });
 setInterval(scanAll, 5000);
 setInterval(checkRollover, 30000);
