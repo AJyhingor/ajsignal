@@ -104,6 +104,17 @@
 
       <div class="panel">
         <h2>Signal Settings</h2>
+        <div class="row"><label>Timeframe</label>
+          <select id="timeframeSel">
+            <option value="60">1 min</option>
+            <option value="300">5 min</option>
+            <option value="900">15 min</option>
+            <option value="1800">30 min</option>
+            <option value="3600" selected>1 hour</option>
+            <option value="14400">4 hour</option>
+            <option value="86400">1 day (D1)</option>
+          </select>
+        </div>
         <div class="row"><label>Buy level (RSI)</label><input type="number" id="buyLevelInp" value="12" min="0" max="50"></div>
         <div class="row"><label>Sell level (RSI)</label><input type="number" id="sellLevelInp" value="88" min="50" max="100"></div>
         <div class="row"><label>EMA period (signal line)</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
@@ -123,6 +134,15 @@
     </div>
 
     <div>
+      <div class="panel">
+        <h2>Watchlist (live values)</h2>
+        <div class="scroll">
+          <table><thead><tr><th>Asset</th><th>Last-closed EMA</th><th>Live EMA</th><th>Trend</th></tr></thead>
+          <tbody id="watchBody"></tbody></table>
+        </div>
+        <div class="empty" id="watchEmpty">Tap Start Watching to begin</div>
+      </div>
+
       <div class="panel">
         <h2>Active Approaches</h2>
         <div class="scroll">
@@ -155,11 +175,13 @@ const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
 const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
 const marketsBody=$('marketsBody'), maxPerCatInp=$('maxPerCatInp'), startBtn=$('startBtn');
+const timeframeSel=$('timeframeSel');
 const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
 const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
 const leadMinInp=$('leadMinInp'), leadMaxInp=$('leadMaxInp');
 const soundToggle=$('soundToggle');
 const approachBody=$('approachBody'), approachEmpty=$('approachEmpty');
+const watchBody=$('watchBody'), watchEmpty=$('watchEmpty');
 const logBody=$('logBody'), logEmpty=$('logEmpty');
 
 let ws=null, reqCounter=1; const pending={};
@@ -279,7 +301,8 @@ async function seedSymbol(symbol){
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   const smaPeriod = parseInt(smaPeriodInp.value)||20;
   try{
-    const resp = await send({ticks_history:symbol, style:"candles", granularity:3600, count: Math.max(60, smaPeriod+30), end:"latest"});
+    const granularity = parseInt(timeframeSel.value)||3600;
+    const resp = await send({ticks_history:symbol, style:"candles", granularity:granularity, count: Math.max(60, smaPeriod+30), end:"latest"});
     const candles = resp.candles || [];
     if(candles.length<smaPeriod+2) return null;
     const closes = candles.map(c=>Number(c.close));
@@ -294,7 +317,7 @@ async function seedSymbol(symbol){
     const sma = smaWindow.reduce((a,b)=>a+b,0)/smaWindow.length;
 
     const lastEpoch = candles[candles.length-1].epoch;
-    const nextHourStart = lastEpoch + 3600;
+    const nextBarStart = lastEpoch + granularity;
 
     return {
       symbol,
@@ -302,7 +325,7 @@ async function seedSymbol(symbol){
       emaVal: ema,
       smaWindow: smaWindow,
       smaVal: sma,
-      forming: { startEpoch: nextHourStart, open:null, close:null },
+      forming: { startEpoch: nextBarStart, open:null, close:null },
       slopeSamples: [],
       alertedHeadsUp: {buy:false, sell:false},
       alertedConfirmed: {buy:false, sell:false},
@@ -367,6 +390,7 @@ function scanAll(){
   const leadMax = parseFloat(leadMaxInp.value)||10;
   const now = Date.now();
   const approaches=[];
+  const watchRows=[];
 
   Object.values(trackers).forEach(t=>{
     if(t.forming.close==null) return;
@@ -378,6 +402,13 @@ function scanAll(){
     // slope tracking (keep ~12 min of samples)
     t.slopeSamples.push({time:now, v:liveEma});
     t.slopeSamples = t.slopeSamples.filter(s=> now-s.time <= 12*60*1000);
+
+    watchRows.push({
+      symbol:t.symbol,
+      lastClosed:t.emaVal.toFixed(1),
+      live:liveEma.toFixed(1),
+      trend: liveEma>t.emaVal ? '▲' : (liveEma<t.emaVal ? '▼' : '–')
+    });
 
     // confirmed cross detection
     const prevEma = t.lastScannedEma;
@@ -392,11 +423,12 @@ function scanAll(){
       t.alertedConfirmed.buy=true;
     }
 
-    // predictive heads-up based on recent slope
-    if(t.slopeSamples.length>=2){
+    // predictive heads-up — require at least 3 samples over a real stretch of time
+    // to avoid single noisy ticks producing a false "X minutes away" projection
+    if(t.slopeSamples.length>=3){
       const first=t.slopeSamples[0], last=t.slopeSamples[t.slopeSamples.length-1];
       const dtMin = (last.time-first.time)/60000;
-      if(dtMin>0.4){
+      if(dtMin>=1.5){
         const slopePerMin = (last.v-first.v)/dtMin;
         if(slopePerMin>0.05 && liveEma<sellLevel){
           const eta = (sellLevel-liveEma)/slopePerMin;
@@ -429,20 +461,26 @@ function scanAll(){
   approachBody.innerHTML = approaches.slice(0,30).map(a=>`
     <tr><td>${a.symbol}</td><td class="${a.dir==='BUY'?'buy':'sell'}">${a.dir}</td>
     <td>${a.val}</td><td>${a.eta}</td></tr>`).join('');
+
+  watchRows.sort((a,b)=> a.symbol.localeCompare(b.symbol));
+  watchEmpty.style.display = watchRows.length ? 'none':'block';
+  watchBody.innerHTML = watchRows.map(w=>`
+    <tr><td>${w.symbol}</td><td>${w.lastClosed}</td><td>${w.live}</td><td>${w.trend}</td></tr>`).join('');
 }
 
 function checkRollover(){
-  const nowHourStart = Math.floor(Date.now()/1000/3600)*3600;
+  const granularity = parseInt(timeframeSel.value)||3600;
+  const nowBarStart = Math.floor(Date.now()/1000/granularity)*granularity;
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   const smaPeriod = parseInt(smaPeriodInp.value)||20;
   Object.values(trackers).forEach(t=>{
-    if(t.forming.startEpoch < nowHourStart && t.forming.close!=null){
+    if(t.forming.startEpoch < nowBarStart && t.forming.close!=null){
       const rawFinal = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
       t.emaVal = emaStep(rawFinal, t.emaVal, emaPeriod);
       t.smaWindow = t.smaWindow.slice(1).concat([rawFinal]);
       t.smaVal = t.smaWindow.reduce((a,b)=>a+b,0)/t.smaWindow.length;
       t.lastFinalizedClose = t.forming.close;
-      t.forming = {startEpoch: nowHourStart+3600, open:null, close:null};
+      t.forming = {startEpoch: nowBarStart+granularity, open:null, close:null};
       t.slopeSamples=[];
       t.alertedHeadsUp={buy:false,sell:false};
       t.alertedConfirmed={buy:false,sell:false};
