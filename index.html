@@ -404,32 +404,30 @@ function renderLog(){
 
 // ---------- mini chart (SVG) for each market ----------
 function miniChartSvg(history, liveEma, liveSma, buyLevel, sellLevel){
-  const W=280, H=84, pad=4, labelW=22;
-  const plotW = W-labelW;
-  const confirmed = history.slice(-24);
+  const W=280, H=130, padX=28, padY=16;
+  const confirmed = history.slice(-22);
   const n = confirmed.length;
-  const scaleY = v => H - pad - ((v-0)/(100-0))*(H-2*pad);
-  const scaleX = i => labelW + pad + (i/(Math.max(n-1,1)))*(plotW-2*pad);
-  const emaPts = confirmed.map((p,i)=>`${scaleX(i)},${scaleY(p.ema)}`).join(' ');
-  const smaPts = confirmed.map((p,i)=>`${scaleX(i)},${scaleY(p.sma)}`).join(' ');
-  const yBuy = scaleY(buyLevel), ySell = scaleY(sellLevel);
+  const scaleX = v => padX + ((v-0)/(100-0))*(W-2*padX);
+  const scaleY = i => padY + (i/(Math.max(n-1,1)))*(H-padY-20);
+  const emaPts = confirmed.map((p,i)=>`${scaleX(p.ema)},${scaleY(i)}`).join(' ');
+  const smaPts = confirmed.map((p,i)=>`${scaleX(p.sma)},${scaleY(i)}`).join(' ');
+  const xBuy = scaleX(buyLevel), xSell = scaleX(sellLevel);
 
-  // live (not-yet-confirmed) point, drawn as a dashed stub off the last confirmed point
-  const lastX = n? scaleX(n-1) : labelW+pad;
-  const liveX = lastX + 16;
-  const lastEmaY = n? scaleY(confirmed[n-1].ema) : scaleY(liveEma);
-  const lastSmaY = n? scaleY(confirmed[n-1].sma) : scaleY(liveSma);
+  const lastY = n? scaleY(n-1) : padY;
+  const liveY = lastY + 18;
+  const lastEmaX = n? scaleX(confirmed[n-1].ema) : scaleX(liveEma);
+  const lastSmaX = n? scaleX(confirmed[n-1].sma) : scaleX(liveSma);
 
   return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <text x="2" y="${ySell+4}" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
-    <text x="2" y="${yBuy+4}" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
-    <line x1="${labelW}" y1="${ySell}" x2="${W}" y2="${ySell}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
-    <line x1="${labelW}" y1="${yBuy}" x2="${W}" y2="${yBuy}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
+    <text x="${xBuy-7}" y="11" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
+    <text x="${xSell-7}" y="11" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
+    <line x1="${xBuy}" y1="14" x2="${xBuy}" y2="${H}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
+    <line x1="${xSell}" y1="14" x2="${xSell}" y2="${H}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
     <polyline points="${smaPts}" fill="none" stroke="#ef4444" stroke-width="1.5"/>
     <polyline points="${emaPts}" fill="none" stroke="#3b9dff" stroke-width="1.8"/>
-    <line x1="${lastX}" y1="${lastSmaY}" x2="${liveX}" y2="${scaleY(liveSma)}" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>
-    <line x1="${lastX}" y1="${lastEmaY}" x2="${liveX}" y2="${scaleY(liveEma)}" stroke="#3b9dff" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
-    <circle cx="${liveX}" cy="${scaleY(liveEma)}" r="2.5" fill="#3b9dff"/>
+    <line x1="${lastSmaX}" y1="${lastY}" x2="${scaleX(liveSma)}" y2="${liveY}" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>
+    <line x1="${lastEmaX}" y1="${lastY}" x2="${scaleX(liveEma)}" y2="${liveY}" stroke="#3b9dff" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
+    <circle cx="${scaleX(liveEma)}" cy="${liveY}" r="2.5" fill="#3b9dff"/>
   </svg>`;
 }
 
