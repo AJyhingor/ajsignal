@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AJ-Signal | Multi-Market RSI Scanner</title>
+<title>AJ-Signal | EMA/SMA Crossover Scanner</title>
 <style>
   :root{
     --bg:#0a0e17; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
-    --blue:#3b9dff; --blue-dim:#1c4a80; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
+    --blue:#00aaff; --white:#ffffff; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
     --text:#e6ebf2; --sub:#7c8aa0;
     --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -47,14 +47,9 @@
     padding:6px 8px;font-family:var(--mono);font-size:13px;width:64px;text-align:center;outline:none;
   }
   input:focus,select:focus{border-color:var(--blue);}
-  .btn{background:var(--blue-dim);color:#cfe6ff;border:1px solid var(--blue);border-radius:7px;
+  .btn{background:#1c4a80;color:#cfe6ff;border:1px solid var(--blue);border-radius:7px;
     padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
   .btn:hover{background:var(--blue);color:#04101d;}
-  .btn.small{padding:4px 9px;font-size:11px;}
-
-  .market-status{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #161d29;}
-  .market-status .ok{color:var(--green);}
-  .market-status .bad{color:var(--red);}
 
   table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
   thead th{text-align:left;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;padding:4px 6px;border-bottom:1px solid var(--line);}
@@ -62,7 +57,9 @@
   tbody tr:hover{background:#121a26;}
   .buy{color:var(--green);font-weight:700;}
   .sell{color:var(--red);font-weight:700;}
-  .scroll{max-height:220px;overflow-y:auto;}
+  .major{font-size:9px;background:#3a2c0f;color:var(--amber);padding:1px 5px;border-radius:8px;}
+  .minor{font-size:9px;background:#1c2433;color:var(--sub);padding:1px 5px;border-radius:8px;}
+  .scroll{max-height:260px;overflow-y:auto;}
   .scroll::-webkit-scrollbar{width:6px;}
   .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   .empty{color:var(--sub);font-size:12px;text-align:center;padding:16px 0;}
@@ -73,14 +70,31 @@
   .sw.active{background:#123b25;border-color:var(--green);}
   .sw.active::after{transform:translateX(18px);background:var(--green);}
 
-  .mkt-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--panel2);}
-  .mkt-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
-  .mkt-name{font-weight:700;font-size:13px;}
+  /* ---- market card, matching the CodePen reference ---- */
+  .mkt-card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;background:#1f2937;}
+  .mkt-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+  .mkt-name{font-weight:700;font-size:14px;}
   .mkt-tf{font-size:10px;color:var(--sub);font-family:var(--mono);}
-  .mkt-vals{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:4px;font-family:var(--mono);}
-  .mkt-vals b{color:var(--text);}
-  .ema-txt{color:#22d3ee;}
-  .sma-txt{color:#fb923c;}
+  .mkt-status{text-align:center;color:#38bdf8;font-size:11px;margin-bottom:4px;}
+  .mkt-price{font-size:30px;color:#22c55e;text-align:center;margin:8px 0;font-weight:bold;font-family:var(--mono);
+    text-shadow:0 0 14px rgba(34,197,94,.45);}
+  .meter{position:relative;height:16px;border-radius:20px;margin:34px 8px 26px;
+    background:linear-gradient(to right,#064e3b,#854d0e,#7f1d1d);}
+  .meter-label{position:absolute;top:-22px;font-size:11px;font-weight:bold;color:var(--text);}
+  .meter-label.left{left:12%;transform:translateX(-50%);}
+  .meter-label.middle{left:50%;transform:translateX(-50%);}
+  .meter-label.right{left:88%;transform:translateX(-50%);}
+  .level-line{position:absolute;top:-8px;height:32px;width:2px;background:#94a3b8;z-index:2;}
+  .line-left{left:12%;}
+  .line-middle{left:50%;}
+  .line-right{left:88%;}
+  .mdot{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;transform:translate(-50%,-50%);
+    transition:left .3s ease;z-index:3;}
+  .mdot.ema{background:#00aaff;box-shadow:0 0 8px #00aaff,0 0 18px #00aaff;}
+  .mdot.sma{background:#ffffff;box-shadow:0 0 8px #fff,0 0 18px #fff;}
+  .legend{display:flex;justify-content:center;gap:24px;font-size:11px;margin-top:4px;}
+  .legend .b{color:#00aaff;}
+  .legend .w{color:#fff;}
 </style>
 </head>
 <body>
@@ -89,7 +103,7 @@
   <header>
     <div class="brand">
       <div class="dot" id="liveDot"></div>
-      <div><h1>AJ-SIGNAL</h1><span class="sub" id="tfLabel">Multi-Market RSI Scanner · —</span></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub" id="tfLabel">EMA/SMA Crossover Scanner · —</span></div>
     </div>
     <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 13 markets ready</span></div>
   </header>
@@ -97,31 +111,24 @@
   <div class="grid">
     <div>
       <div class="panel">
-        <h2>Signal Settings</h2>
+        <h2>Settings</h2>
         <div class="row"><label>Timeframe</label>
           <select id="timeframeSel">
             <option value="60">1 min</option>
             <option value="300">5 min</option>
             <option value="900">15 min</option>
             <option value="1800">30 min</option>
-            <option value="3600" selected>1 hour</option>
+            <option value="3600">1 hour</option>
             <option value="14400">4 hour</option>
-            <option value="86400">1 day (D1)</option>
+            <option value="86400" selected>1 day (D1)</option>
           </select>
         </div>
-        <div class="row"><label>Buy level (RSI)</label><input type="number" id="buyLevelInp" value="12" min="0" max="50"></div>
-        <div class="row"><label>Sell level (RSI)</label><input type="number" id="sellLevelInp" value="88" min="50" max="100"></div>
-        <div class="row"><label>EMA period (signal line)</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
-        <div class="row"><label>SMA period (confirm line)</label><input type="number" id="smaPeriodInp" value="20" min="2" max="100"></div>
-        <div class="row"><label>Lead-time window (min)</label>
-          <div style="display:flex;gap:4px;align-items:center;">
-            <input type="number" id="leadMinInp" value="5" min="1" max="30" style="width:48px;">
-            <span style="color:var(--sub);">–</span>
-            <input type="number" id="leadMaxInp" value="10" min="1" max="60" style="width:48px;">
-          </div>
-        </div>
+        <div class="row"><label>EMA period</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
+        <div class="row"><label>SMA period</label><input type="number" id="smaPeriodInp" value="14" min="2" max="100"></div>
+        <div class="row"><label>Buy level</label><input type="number" id="buyLevelInp" value="12" min="0" max="49"></div>
+        <div class="row"><label>Sell level</label><input type="number" id="sellLevelInp" value="88" min="51" max="100"></div>
         <div class="row">
-          <div class="toggle-line"><label>Sound on signal</label></div>
+          <div class="toggle-line"><label>Sound on MAJOR signal</label></div>
           <div class="sw active" id="soundToggle"></div>
         </div>
         <div class="row" style="margin-top:10px;">
@@ -132,33 +139,22 @@
 
     <div>
       <div class="panel">
-        <h2 class="clickable" id="liveMarketsToggle">Live Markets <span class="caret" id="liveMarketsCaret">▽</span></h2>
-        <div class="scroll" id="liveMarketsBody" style="max-height:520px;">
-          <div class="empty" id="liveMarketsEmpty">Tap Start Watching to begin</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Active Approaches</h2>
-        <div class="scroll">
-          <table><thead><tr><th>Asset</th><th>Dir</th><th>Value</th><th>Est. min</th></tr></thead>
-          <tbody id="approachBody"></tbody></table>
-        </div>
-        <div class="empty" id="approachEmpty">No approaches within the lead-time window right now</div>
-      </div>
-
-      <div class="panel">
         <h2>Signal Log</h2>
         <div class="scroll">
-          <table><thead><tr><th>Time</th><th>Asset</th><th>Type</th><th>Note</th></tr></thead>
+          <table><thead><tr><th>Time</th><th>Asset</th><th>Type</th><th>Tier</th></tr></thead>
           <tbody id="logBody"></tbody></table>
         </div>
-        <div class="empty" id="logEmpty">No signals fired yet</div>
+        <div class="empty" id="logEmpty">No crossovers yet</div>
       </div>
     </div>
   </div>
 
-  <div class="footnote">EMA9 = RSI with exponential (Wilder) smoothing, period 9. SMA20 = RSI with simple-average smoothing, period 20. Signals estimate EMA9's projected time to reach your buy/sell levels based on its recent slope — a heuristic, not a guarantee. The "Last-closed" value only updates once a bar actually closes, so it's directly comparable to your MT5 chart. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="panel">
+    <h2 class="clickable" id="liveMarketsToggle">Live Markets <span class="caret" id="liveMarketsCaret">▽</span></h2>
+    <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
+  </div>
+
+  <div class="footnote">EMA/SMA are computed on raw price closes (not RSI). The dot position is the price's normalized location within its recent trading range, scaled onto 12–88 for display (clamped so it never leaves the bar) — a MAJOR signal is a crossover happening at or beyond the 12/88 edge; a MINOR signal is a crossover happening in the middle zone. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -169,21 +165,16 @@ const APP_ID = 117974;
 const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
 const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount'), tfLabel=$('tfLabel');
-const startBtn=$('startBtn');
-const timeframeSel=$('timeframeSel');
-const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
+const startBtn=$('startBtn'), timeframeSel=$('timeframeSel');
 const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
-const leadMinInp=$('leadMinInp'), leadMaxInp=$('leadMaxInp');
+const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
 const soundToggle=$('soundToggle');
-const approachBody=$('approachBody'), approachEmpty=$('approachEmpty');
 const liveMarketsBody=$('liveMarketsBody'), liveMarketsEmpty=$('liveMarketsEmpty');
 const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsCaret');
 const logBody=$('logBody'), logEmpty=$('logEmpty');
 
-const TF_LABELS = {60:'1 min',300:'5 min',900:'15 min',1800:'30 min',3600:'1H',14400:'4H',86400:'D1'};
+const TF_LABELS = {60:'1M',300:'5M',900:'15M',1800:'30M',3600:'1H',14400:'4H',86400:'D1'};
 
-// The 13 fixed markets. `patterns` = substrings to look for in the symbol's
-// display name (case-insensitive, all must match) to find it in Deriv's live list.
 const TARGET_MARKETS = [
   {label:'Volatility 100 Index', patterns:['volatility 100'], avoid:['1s']},
   {label:'Volatility 75 Index',  patterns:['volatility 75'],  avoid:['1s']},
@@ -202,10 +193,10 @@ const TARGET_MARKETS = [
 
 let ws=null, reqCounter=1; const pending={};
 let soundOn=true;
-let trackers={}; // symbol -> tracker
-let resolvedMarkets=[]; // {label, symbol, found}
+let trackers={};
+let resolvedMarkets=[];
 let logEntries=[];
-let activeGranularity=3600;
+let activeGranularity=86400;
 let liveMarketsOpen=true;
 
 function send(payload){
@@ -231,9 +222,14 @@ function connect(){
       const {resolve,reject}=pending[data.req_id]; delete pending[data.req_id];
       if(data.error){reject(data.error);}else{resolve(data);}
     }
-    if(data.msg_type==='tick' && data.tick){
-      const t=trackers[data.tick.symbol];
-      if(t){ if(t.forming.open==null) t.forming.open=Number(data.tick.quote); t.forming.close=Number(data.tick.quote); }
+    if(data.msg_type==='ohlc' && data.ohlc){
+      const t=trackers[data.ohlc.symbol];
+      if(t){
+        t.closes.push(Number(data.ohlc.close));
+        if(t.closes.length>150) t.closes.shift();
+        t.lastPrice = Number(data.ohlc.close);
+        updateTracker(t);
+      }
     }
   };
 }
@@ -247,18 +243,16 @@ async function resolveMarkets(){
       const nm = s.underlying_symbol_name || s.display_name || sym;
       return {symbol:sym, name:nm, nameLower:(nm||'').toLowerCase()};
     });
-
     resolvedMarkets = TARGET_MARKETS.map(target=>{
       const avoid = target.avoid||[];
       const match = normalized.find(s=>
         target.patterns.every(p=>s.nameLower.includes(p)) &&
         !avoid.some(a=>s.nameLower.includes(a))
       );
-      return {label:target.label, symbol: match?match.symbol:null, name: match?match.name:null, found:!!match};
+      return {label:target.label, symbol: match?match.symbol:null, found:!!match};
     });
-
     updateSymCount();
-    startWatching(); // auto-start once resolved
+    startWatching();
   }catch(err){
     connLabel.textContent = 'Symbol list failed';
     console.error('Could not load symbol list:', err);
@@ -271,70 +265,41 @@ function updateSymCount(){
   symCount.textContent = `${foundCount} / 13 markets ready` + (missing.length? ' (missing: '+missing.join(', ')+')' : '');
 }
 
-// ---------- RSI / EMA / SMA math ----------
-function gainLoss(closes){
-  const gains=[], losses=[];
-  for(let i=1;i<closes.length;i++){
-    const diff = closes[i]-closes[i-1];
-    gains.push(Math.max(diff,0));
-    losses.push(Math.max(-diff,0));
-  }
-  return {gains, losses};
+// ---------- EMA / SMA (on raw price, matching the reference implementation) ----------
+function calcSMA(arr,n){
+  if(arr.length<n) return null;
+  let sum=0;
+  for(let i=arr.length-n;i<arr.length;i++) sum+=arr[i];
+  return sum/n;
 }
-function rsiFromAvg(avgGain, avgLoss){
-  if(avgLoss===0) return avgGain===0 ? 50 : 100;
-  const rs = avgGain/avgLoss;
-  return 100 - 100/(1+rs);
+function calcEMA(arr,n){
+  if(arr.length<n) return null;
+  const k=2/(n+1);
+  let ema=arr[arr.length-n];
+  for(let i=arr.length-n+1;i<arr.length;i++) ema = arr[i]*k + ema*(1-k);
+  return ema;
+}
+function normalizedPosition(value, recentCloses, buyLevel, sellLevel){
+  const recent = recentCloses.slice(-50);
+  const min = Math.min(...recent), max = Math.max(...recent);
+  if(max===min) return {raw:(buyLevel+sellLevel)/2, clamped:(buyLevel+sellLevel)/2};
+  const span = sellLevel-buyLevel;
+  let raw = ((value-min)/(max-min))*span + buyLevel;
+  const clamped = Math.max(buyLevel, Math.min(sellLevel, raw));
+  return {raw, clamped};
 }
 
 async function seedSymbol(symbol){
-  const emaPeriod = parseInt(emaPeriodInp.value)||9;   // Wilder/exponential RSI period
-  const smaPeriod = parseInt(smaPeriodInp.value)||20;  // Simple-average RSI period
   const granularity = activeGranularity;
   try{
-    const resp = await send({ticks_history:symbol, style:"candles", granularity:granularity, count: Math.max(80, smaPeriod+40), end:"latest"});
+    const resp = await send({ticks_history:symbol, style:"candles", granularity, count:100, end:"latest"});
     const candles = resp.candles || [];
-    if(candles.length<smaPeriod+2) return null;
+    if(candles.length<20) return null;
     const closes = candles.map(c=>Number(c.close));
-    const {gains, losses} = gainLoss(closes);
-
-    // Wilder/exponential RSI (the "EMA9" signal line)
-    let wGain = gains.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
-    let wLoss = losses.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
-    const history=[]; // rolling {ema,sma} per finalized bar, for the mini chart
-    for(let i=emaPeriod;i<gains.length;i++){
-      wGain = (wGain*(emaPeriod-1)+gains[i])/emaPeriod;
-      wLoss = (wLoss*(emaPeriod-1)+losses[i])/emaPeriod;
-      if(i>=smaPeriod-1){
-        const gWin = gains.slice(i-smaPeriod+1, i+1);
-        const lWin = losses.slice(i-smaPeriod+1, i+1);
-        const sGain = gWin.reduce((a,b)=>a+b,0)/smaPeriod;
-        const sLoss = lWin.reduce((a,b)=>a+b,0)/smaPeriod;
-        history.push({ema: rsiFromAvg(wGain,wLoss), sma: rsiFromAvg(sGain,sLoss)});
-      }
-    }
-    // Simple-average RSI (the "SMA20" confirm line) — final rolling window
-    const gWinFinal = gains.slice(-smaPeriod), lWinFinal = losses.slice(-smaPeriod);
-    const sGainFinal = gWinFinal.reduce((a,b)=>a+b,0)/smaPeriod;
-    const sLossFinal = lWinFinal.reduce((a,b)=>a+b,0)/smaPeriod;
-
-    const lastEpoch = candles[candles.length-1].epoch;
-    const nextBarStart = lastEpoch + granularity;
-    const emaVal = rsiFromAvg(wGain,wLoss), smaVal = rsiFromAvg(sGainFinal,sLossFinal);
-
     return {
-      symbol,
-      lastFinalizedClose: closes[closes.length-1],
-      wGain, wLoss,                 // committed Wilder state
-      gainsWindow: gWinFinal, lossesWindow: lWinFinal, // committed simple-RSI rolling window
-      emaVal, smaVal,
-      history: history.slice(-40),
-      forming: { startEpoch: nextBarStart, open:null, close:null },
-      slopeSamples: [],
-      alertedHeadsUp: {buy:false, sell:false},
-      alertedConfirmed: {buy:false, sell:false},
-      lastScannedEma: emaVal,
-      lastScannedSma: smaVal
+      symbol, closes, lastPrice: closes[closes.length-1],
+      prevSign:null,
+      emaVal:null, smaVal:null
     };
   }catch(err){
     console.warn('Seed failed for', symbol, err);
@@ -344,241 +309,118 @@ async function seedSymbol(symbol){
 
 async function startWatching(){
   startBtn.disabled = true; startBtn.textContent = 'Loading…';
-  activeGranularity = parseInt(timeframeSel.value)||3600;
-  tfLabel.textContent = 'Multi-Market RSI Scanner · ' + (TF_LABELS[activeGranularity]||activeGranularity+'s');
+  activeGranularity = parseInt(timeframeSel.value)||86400;
+  tfLabel.textContent = 'EMA/SMA Crossover Scanner · ' + (TF_LABELS[activeGranularity]||activeGranularity+'s');
   trackers = {};
   const symbols = resolvedMarkets.filter(m=>m.found).map(m=>m.symbol);
   for(const sym of symbols){
     const tr = await seedSymbol(sym);
     if(tr){
       trackers[sym]=tr;
-      ws.send(JSON.stringify({ticks:sym, subscribe:1}));
+      updateTracker(tr, true); // seed prevSign without firing signals
+      ws.send(JSON.stringify({ticks_history:sym, style:"candles", granularity:activeGranularity, count:1, end:"latest", subscribe:1}));
     }
     await new Promise(r=>setTimeout(r,60));
   }
+  renderAll();
   startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching';
 }
 
 // ---------- alerts ----------
 let currentAlarmCtx=null;
-function beep(){
+function alarm(){
   if(!soundOn) return;
   try{
     if(currentAlarmCtx){ try{currentAlarmCtx.close();}catch(e){} }
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
     currentAlarmCtx = ctx;
-    const gainNode = ctx.createGain();
-    gainNode.gain.value = 0.9;
-    gainNode.connect(ctx.destination);
-
-    const duration = 30;       // total alarm length in seconds
-    const beepLen = 0.35, gapLen = 0.15;
-    const cycle = beepLen+gapLen;
+    const gainNode = ctx.createGain(); gainNode.gain.value = 0.9; gainNode.connect(ctx.destination);
+    const duration=30, beepLen=0.35, gapLen=0.15, cycle=beepLen+gapLen;
     const cycles = Math.floor(duration/cycle);
     let t = ctx.currentTime;
     for(let i=0;i<cycles;i++){
       const osc = ctx.createOscillator();
-      osc.type = 'square'; // sharper, more attention-grabbing than a sine tone
-      osc.frequency.value = (i%2===0) ? 1200 : 850;
-      osc.connect(gainNode);
-      osc.start(t);
-      osc.stop(t+beepLen);
+      osc.type='square'; osc.frequency.value=(i%2===0)?1200:850;
+      osc.connect(gainNode); osc.start(t); osc.stop(t+beepLen);
       t += cycle;
     }
     setTimeout(()=>{ try{ctx.close();}catch(e){} }, duration*1000+500);
   }catch(e){}
 }
-function logSignal(symbol, type, note){
+function logSignal(symbol, type, tier){
   const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  logEntries.unshift({time, symbol, type, note});
+  logEntries.unshift({time, symbol, type, tier});
   if(logEntries.length>300) logEntries.pop();
-  renderLog(); beep();
+  renderLog();
+  if(tier==='MAJOR') alarm();
 }
 function renderLog(){
   logEmpty.style.display = logEntries.length ? 'none':'block';
-  logBody.innerHTML = logEntries.slice(0,80).map(e=>`
+  logBody.innerHTML = logEntries.slice(0,100).map(e=>`
     <tr><td>${e.time}</td><td>${e.symbol}</td>
     <td class="${e.type==='BUY'?'buy':'sell'}">${e.type}</td>
-    <td>${e.note}</td></tr>`).join('');
+    <td><span class="${e.tier==='MAJOR'?'major':'minor'}">${e.tier}</span></td></tr>`).join('');
 }
 
-// ---------- mini chart (SVG) for each market ----------
-function gaugeSvg(emaVal, smaVal, buyLevel, sellLevel){
-  const midLevel = (buyLevel+sellLevel)/2;
-  const W=280, H=70, padX=30, axisY=36;
-  const scaleX = v => padX + ((v-0)/(100-0))*(W-2*padX);
-  const xBuy=scaleX(buyLevel), xMid=scaleX(midLevel), xSell=scaleX(sellLevel);
-  const xEma=scaleX(emaVal), xSma=scaleX(smaVal);
-  const bearish = emaVal < smaVal;                 // EMA9 below SMA20 → downtrend, toward buyLevel
-  const arrowColor = bearish ? '#ef4444' : '#22c55e';
-  const targetX = bearish ? xBuy : xSell;
-  const distVal = bearish ? Math.max(0, emaVal-buyLevel) : Math.max(0, sellLevel-emaVal);
-  const tip=5;
-  const tri = bearish
-    ? `${targetX-tip*1.6},${axisY} ${targetX+tip*0.6},${axisY-tip} ${targetX+tip*0.6},${axisY+tip}`
-    : `${targetX+tip*1.6},${axisY} ${targetX-tip*0.6},${axisY-tip} ${targetX-tip*0.6},${axisY+tip}`;
+// ---------- core update: recompute EMA/SMA, detect crossovers ----------
+function updateTracker(t, seedOnly){
+  const emaPeriod = parseInt(emaPeriodInp.value)||9;
+  const smaPeriod = parseInt(smaPeriodInp.value)||14;
+  const buyLevel = parseFloat(buyLevelInp.value)||12;
+  const sellLevel = parseFloat(sellLevelInp.value)||88;
+  if(t.closes.length<Math.max(emaPeriod,smaPeriod)) return;
 
-  return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}">
-    <defs>
-      <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
-        <feGaussianBlur stdDeviation="2.4" result="b"/>
-        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <line x1="${padX}" y1="${axisY}" x2="${W-padX}" y2="${axisY}" stroke="#232c3d" stroke-width="2"/>
-    <line x1="${xBuy}" y1="8" x2="${xBuy}" y2="${H-10}" stroke="#3a5a3a" stroke-dasharray="3,3"/>
-    <line x1="${xMid}" y1="8" x2="${xMid}" y2="${H-10}" stroke="#33445a" stroke-dasharray="2,4"/>
-    <line x1="${xSell}" y1="8" x2="${xSell}" y2="${H-10}" stroke="#5a3a3a" stroke-dasharray="3,3"/>
-    <text x="${xBuy-7}" y="8" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
-    <text x="${xMid-7}" y="8" font-size="10" fill="#8090a8" font-family="monospace">${midLevel}</text>
-    <text x="${xSell-7}" y="8" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
+  const ema = calcEMA(t.closes, emaPeriod);
+  const sma = calcSMA(t.closes, smaPeriod);
+  if(ema==null||sma==null) return;
+  t.emaVal=ema; t.smaVal=sma;
 
-    <line x1="${xEma}" y1="${axisY}" x2="${targetX}" y2="${axisY}" stroke="${arrowColor}" stroke-width="2.2" filter="url(#glow)"/>
-    <polygon points="${tri}" fill="${arrowColor}" filter="url(#glow)"/>
+  const diff = ema-sma;
+  const sign = diff>0?1:(diff<0?-1:0);
 
-    <circle cx="${xSma}" cy="${axisY}" r="4" fill="#fb923c" opacity="0.9"/>
-    <circle cx="${xEma}" cy="${axisY}" r="5.5" fill="#22d3ee" filter="url(#glow)"/>
-
-    <text x="${W-padX}" y="${H-2}" font-size="9" fill="#7c8aa0" font-family="monospace" text-anchor="end">Δ ${distVal.toFixed(1)} to ${bearish?buyLevel:sellLevel}</text>
-  </svg>`;
+  if(!seedOnly && t.prevSign!=null && sign!==0 && t.prevSign!==0 && sign!==t.prevSign){
+    const bullishCross = sign>0;
+    const pos = normalizedPosition(ema, t.closes, buyLevel, sellLevel);
+    if(bullishCross && pos.raw<buyLevel){
+      logSignal(t.symbol,'BUY','MAJOR');
+    } else if(!bullishCross && pos.raw>sellLevel){
+      logSignal(t.symbol,'SELL','MAJOR');
+    } else {
+      logSignal(t.symbol, bullishCross?'BUY':'SELL', 'MINOR');
+    }
+  }
+  t.prevSign = sign;
 }
 
-function renderLiveMarkets(rows){
-  liveMarketsEmpty.style.display = rows.length ? 'none':'block';
-  liveMarketsBody.innerHTML = rows.map(r=>`
-    <div class="mkt-card">
-      <div class="mkt-head">
-        <span class="mkt-name">${r.symbol}</span>
-        <span class="mkt-tf">${TF_LABELS[activeGranularity]||''}</span>
-      </div>
-      ${gaugeSvg(r.liveEma, r.liveSma, r.buyLevel, r.sellLevel)}
-      <div class="mkt-vals">
-        <span>EMA9 <b class="ema-txt">${r.liveEma.toFixed(1)}</b></span>
-        <span>SMA20 <b class="sma-txt">${r.liveSma.toFixed(1)}</b></span>
-        <span>Last-closed <b>${r.lastClosedEma.toFixed(1)}</b></span>
-      </div>
-    </div>`).join('');
-}
-
-// ---------- live scan loop ----------
-function scanAll(){
+// ---------- render ----------
+function renderAll(){
   if(!liveMarketsOpen) return;
   const buyLevel = parseFloat(buyLevelInp.value)||12;
   const sellLevel = parseFloat(sellLevelInp.value)||88;
-  const emaPeriod = parseInt(emaPeriodInp.value)||9;
-  const leadMin = parseFloat(leadMinInp.value)||5;
-  const leadMax = parseFloat(leadMaxInp.value)||10;
-  const now = Date.now();
-  const approaches=[];
-  const cardRows=[];
-
-  Object.values(trackers).forEach(t=>{
-    if(t.forming.close==null) return;
-    const diff = t.forming.close - t.lastFinalizedClose;
-    const gainNow = Math.max(diff,0), lossNow = Math.max(-diff,0);
-
-    const emaPeriodLive = emaPeriod;
-    const liveWGain = (t.wGain*(emaPeriodLive-1)+gainNow)/emaPeriodLive;
-    const liveWLoss = (t.wLoss*(emaPeriodLive-1)+lossNow)/emaPeriodLive;
-    const liveEma = rsiFromAvg(liveWGain, liveWLoss);
-
-    const smaPeriodLive = t.gainsWindow.length;
-    const gWin = t.gainsWindow.slice(1).concat([gainNow]);
-    const lWin = t.lossesWindow.slice(1).concat([lossNow]);
-    const liveSGain = gWin.reduce((a,b)=>a+b,0)/smaPeriodLive;
-    const liveSLoss = lWin.reduce((a,b)=>a+b,0)/smaPeriodLive;
-    const liveSma = rsiFromAvg(liveSGain, liveSLoss);
-
-    t.slopeSamples.push({time:now, v:liveEma});
-    t.slopeSamples = t.slopeSamples.filter(s=> now-s.time <= 12*60*1000);
-
-    cardRows.push({
-      symbol:t.symbol, history:t.history, liveEma, liveSma,
-      lastClosedEma:t.emaVal, buyLevel, sellLevel
-    });
-
-    const prevEma = t.lastScannedEma;
-    if(liveEma>=sellLevel && prevEma<sellLevel && !t.alertedConfirmed.sell){
-      const reversal = (liveEma>liveSma) && !(prevEma>t.lastScannedSma);
-      logSignal(t.symbol,'SELL', reversal? 'Confirmed reversal (EMA crossed SMA)':'Confirmed touch of '+sellLevel);
-      t.alertedConfirmed.sell=true;
-    }
-    if(liveEma<=buyLevel && prevEma>buyLevel && !t.alertedConfirmed.buy){
-      const reversal = (liveEma<liveSma) && !(prevEma<t.lastScannedSma);
-      logSignal(t.symbol,'BUY', reversal? 'Confirmed reversal (EMA crossed SMA)':'Confirmed touch of '+buyLevel);
-      t.alertedConfirmed.buy=true;
-    }
-
-    if(t.slopeSamples.length>=3){
-      const first=t.slopeSamples[0], last=t.slopeSamples[t.slopeSamples.length-1];
-      const dtMin = (last.time-first.time)/60000;
-      if(dtMin>=1.5){
-        const slopePerMin = (last.v-first.v)/dtMin;
-        if(slopePerMin>0.05 && liveEma<sellLevel){
-          const eta = (sellLevel-liveEma)/slopePerMin;
-          if(eta<=leadMax){
-            approaches.push({symbol:t.symbol,dir:'SELL',val:liveEma.toFixed(1),eta:eta.toFixed(1)});
-            if(eta>=leadMin && !t.alertedHeadsUp.sell){
-              logSignal(t.symbol,'SELL','Heads up — est. '+eta.toFixed(1)+' min to '+sellLevel);
-              t.alertedHeadsUp.sell=true;
-            }
-          }
-        }
-        if(slopePerMin<-0.05 && liveEma>buyLevel){
-          const eta = (liveEma-buyLevel)/(-slopePerMin);
-          if(eta<=leadMax){
-            approaches.push({symbol:t.symbol,dir:'BUY',val:liveEma.toFixed(1),eta:eta.toFixed(1)});
-            if(eta>=leadMin && !t.alertedHeadsUp.buy){
-              logSignal(t.symbol,'BUY','Heads up — est. '+eta.toFixed(1)+' min to '+buyLevel);
-              t.alertedHeadsUp.buy=true;
-            }
-          }
-        }
-      }
-    }
-    t.lastScannedEma=liveEma; t.lastScannedSma=liveSma;
-  });
-
-  approaches.sort((a,b)=>parseFloat(a.eta)-parseFloat(b.eta));
-  approachEmpty.style.display = approaches.length ? 'none':'block';
-  approachBody.innerHTML = approaches.slice(0,30).map(a=>`
-    <tr><td>${a.symbol}</td><td class="${a.dir==='BUY'?'buy':'sell'}">${a.dir}</td>
-    <td>${a.val}</td><td>${a.eta}</td></tr>`).join('');
-
-  cardRows.sort((a,b)=>a.symbol.localeCompare(b.symbol));
-  renderLiveMarkets(cardRows);
-}
-
-function checkRollover(){
-  const granularity = activeGranularity;
-  const nowBarStart = Math.floor(Date.now()/1000/granularity)*granularity;
-  const emaPeriod = parseInt(emaPeriodInp.value)||9;
-  Object.values(trackers).forEach(t=>{
-    if(t.forming.startEpoch < nowBarStart && t.forming.close!=null){
-      const diff = t.forming.close - t.lastFinalizedClose;
-      const gainFinal = Math.max(diff,0), lossFinal = Math.max(-diff,0);
-
-      t.wGain = (t.wGain*(emaPeriod-1)+gainFinal)/emaPeriod;
-      t.wLoss = (t.wLoss*(emaPeriod-1)+lossFinal)/emaPeriod;
-      t.emaVal = rsiFromAvg(t.wGain, t.wLoss);
-
-      const smaPeriod = t.gainsWindow.length;
-      t.gainsWindow = t.gainsWindow.slice(1).concat([gainFinal]);
-      t.lossesWindow = t.lossesWindow.slice(1).concat([lossFinal]);
-      const sGain = t.gainsWindow.reduce((a,b)=>a+b,0)/smaPeriod;
-      const sLoss = t.lossesWindow.reduce((a,b)=>a+b,0)/smaPeriod;
-      t.smaVal = rsiFromAvg(sGain, sLoss);
-
-      t.history.push({ema:t.emaVal, sma:t.smaVal});
-      if(t.history.length>40) t.history.shift();
-      t.lastFinalizedClose = t.forming.close;
-      t.forming = {startEpoch: nowBarStart+granularity, open:null, close:null};
-      t.slopeSamples=[];
-      t.alertedHeadsUp={buy:false,sell:false};
-      t.alertedConfirmed={buy:false,sell:false};
-      t.lastScannedEma=t.emaVal; t.lastScannedSma=t.smaVal;
-    }
-  });
+  const rows = Object.values(trackers).filter(t=>t.emaVal!=null);
+  rows.sort((a,b)=>a.symbol.localeCompare(b.symbol));
+  liveMarketsEmpty.style.display = rows.length ? 'none':'block';
+  liveMarketsBody.innerHTML = rows.map(t=>{
+    const posEma = normalizedPosition(t.emaVal, t.closes, buyLevel, sellLevel).clamped;
+    const posSma = normalizedPosition(t.smaVal, t.closes, buyLevel, sellLevel).clamped;
+    const midLevel = ((buyLevel+sellLevel)/2).toFixed(0);
+    return `<div class="mkt-card">
+      <div class="mkt-head"><span class="mkt-name">${t.symbol}</span><span class="mkt-tf">${TF_LABELS[activeGranularity]||''}</span></div>
+      <div class="mkt-status">Connected · ${TF_LABELS[activeGranularity]||''}</div>
+      <div class="mkt-price">${t.lastPrice!=null?t.lastPrice.toFixed(2):'--'}</div>
+      <div class="meter">
+        <span class="meter-label left">${buyLevel}</span>
+        <span class="meter-label middle">${midLevel}</span>
+        <span class="meter-label right">${sellLevel}</span>
+        <div class="level-line line-left"></div>
+        <div class="level-line line-middle"></div>
+        <div class="level-line line-right"></div>
+        <div class="mdot ema" style="left:${posEma}%"></div>
+        <div class="mdot sma" style="left:${posSma}%"></div>
+      </div>
+      <div class="legend"><span class="b">● EMA ${parseInt(emaPeriodInp.value)||9}</span><span class="w">● SMA ${parseInt(smaPeriodInp.value)||14}</span></div>
+    </div>`;
+  }).join('');
 }
 
 // ---------- wiring ----------
@@ -592,8 +434,7 @@ liveMarketsToggle.addEventListener('click', ()=>{
   liveMarketsCaret.classList.toggle('closed', !liveMarketsOpen);
   liveMarketsCaret.textContent = liveMarketsOpen ? '▽' : '▷';
 });
-setInterval(scanAll, 5000);
-setInterval(checkRollover, 30000);
+setInterval(renderAll, 3000);
 
 connect();
 })();
