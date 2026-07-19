@@ -158,7 +158,7 @@
     </div>
   </div>
 
-  <div class="footnote">Signals estimate the EMA(9)-of-RSI(1) line's projected time to reach your buy/sell levels, based on its recent slope — a heuristic, not a guarantee, since indicator lines don't move linearly. The "Last-closed" value in each market card only updates once a bar actually closes, so it's directly comparable to what your MT5 chart shows. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="footnote">EMA9 = RSI with exponential (Wilder) smoothing, period 9. SMA20 = RSI with simple-average smoothing, period 20. Signals estimate EMA9's projected time to reach your buy/sell levels based on its recent slope — a heuristic, not a guarantee. The "Last-closed" value only updates once a bar actually closes, so it's directly comparable to your MT5 chart. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -272,58 +272,69 @@ function updateSymCount(){
 }
 
 // ---------- RSI / EMA / SMA math ----------
-function rawRsiPoint(close, prevClose){
-  if(close>prevClose) return 100;
-  if(close<prevClose) return 0;
-  return 50;
+function gainLoss(closes){
+  const gains=[], losses=[];
+  for(let i=1;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    gains.push(Math.max(diff,0));
+    losses.push(Math.max(-diff,0));
+  }
+  return {gains, losses};
 }
-function emaStep(value, prevEma, period){
-  const k = 2/(period+1);
-  return value*k + prevEma*(1-k);
+function rsiFromAvg(avgGain, avgLoss){
+  if(avgLoss===0) return avgGain===0 ? 50 : 100;
+  const rs = avgGain/avgLoss;
+  return 100 - 100/(1+rs);
 }
 
 async function seedSymbol(symbol){
-  const emaPeriod = parseInt(emaPeriodInp.value)||9;
-  const smaPeriod = parseInt(smaPeriodInp.value)||20;
+  const emaPeriod = parseInt(emaPeriodInp.value)||9;   // Wilder/exponential RSI period
+  const smaPeriod = parseInt(smaPeriodInp.value)||20;  // Simple-average RSI period
   const granularity = activeGranularity;
   try{
     const resp = await send({ticks_history:symbol, style:"candles", granularity:granularity, count: Math.max(80, smaPeriod+40), end:"latest"});
     const candles = resp.candles || [];
     if(candles.length<smaPeriod+2) return null;
     const closes = candles.map(c=>Number(c.close));
-    const rawArr=[];
-    for(let i=1;i<closes.length;i++) rawArr.push(rawRsiPoint(closes[i], closes[i-1]));
+    const {gains, losses} = gainLoss(closes);
 
-    let ema = rawArr.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
+    // Wilder/exponential RSI (the "EMA9" signal line)
+    let wGain = gains.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
+    let wLoss = losses.slice(0,emaPeriod).reduce((a,b)=>a+b,0)/emaPeriod;
     const history=[]; // rolling {ema,sma} per finalized bar, for the mini chart
-    let smaWindow = rawArr.slice(0,smaPeriod);
-    for(let i=emaPeriod;i<rawArr.length;i++){
-      ema = emaStep(rawArr[i], ema, emaPeriod);
+    for(let i=emaPeriod;i<gains.length;i++){
+      wGain = (wGain*(emaPeriod-1)+gains[i])/emaPeriod;
+      wLoss = (wLoss*(emaPeriod-1)+losses[i])/emaPeriod;
       if(i>=smaPeriod-1){
-        smaWindow = rawArr.slice(Math.max(0,i-smaPeriod+1), i+1);
-        const smaNow = smaWindow.reduce((a,b)=>a+b,0)/smaWindow.length;
-        history.push({ema, sma:smaNow});
+        const gWin = gains.slice(i-smaPeriod+1, i+1);
+        const lWin = losses.slice(i-smaPeriod+1, i+1);
+        const sGain = gWin.reduce((a,b)=>a+b,0)/smaPeriod;
+        const sLoss = lWin.reduce((a,b)=>a+b,0)/smaPeriod;
+        history.push({ema: rsiFromAvg(wGain,wLoss), sma: rsiFromAvg(sGain,sLoss)});
       }
     }
-    const finalSmaWindow = rawArr.slice(-smaPeriod);
-    const sma = finalSmaWindow.reduce((a,b)=>a+b,0)/finalSmaWindow.length;
+    // Simple-average RSI (the "SMA20" confirm line) — final rolling window
+    const gWinFinal = gains.slice(-smaPeriod), lWinFinal = losses.slice(-smaPeriod);
+    const sGainFinal = gWinFinal.reduce((a,b)=>a+b,0)/smaPeriod;
+    const sLossFinal = lWinFinal.reduce((a,b)=>a+b,0)/smaPeriod;
 
     const lastEpoch = candles[candles.length-1].epoch;
     const nextBarStart = lastEpoch + granularity;
+    const emaVal = rsiFromAvg(wGain,wLoss), smaVal = rsiFromAvg(sGainFinal,sLossFinal);
 
     return {
       symbol,
       lastFinalizedClose: closes[closes.length-1],
-      emaVal: ema,
-      smaWindow: finalSmaWindow,
-      smaVal: sma,
+      wGain, wLoss,                 // committed Wilder state
+      gainsWindow: gWinFinal, lossesWindow: lWinFinal, // committed simple-RSI rolling window
+      emaVal, smaVal,
       history: history.slice(-40),
       forming: { startEpoch: nextBarStart, open:null, close:null },
       slopeSamples: [],
       alertedHeadsUp: {buy:false, sell:false},
       alertedConfirmed: {buy:false, sell:false},
-      lastScannedEma: ema,
-      lastScannedSma: sma
+      lastScannedEma: emaVal,
+      lastScannedSma: smaVal
     };
   }catch(err){
     console.warn('Seed failed for', symbol, err);
@@ -393,19 +404,32 @@ function renderLog(){
 
 // ---------- mini chart (SVG) for each market ----------
 function miniChartSvg(history, liveEma, liveSma, buyLevel, sellLevel){
-  const W=280, H=70, pad=4;
-  const pts = history.slice(-24).concat([{ema:liveEma, sma:liveSma}]);
-  const n = pts.length;
+  const W=280, H=84, pad=4, labelW=22;
+  const plotW = W-labelW;
+  const confirmed = history.slice(-24);
+  const n = confirmed.length;
   const scaleY = v => H - pad - ((v-0)/(100-0))*(H-2*pad);
-  const scaleX = i => pad + (i/(Math.max(n-1,1)))*(W-2*pad);
-  const emaPts = pts.map((p,i)=>`${scaleX(i)},${scaleY(p.ema)}`).join(' ');
-  const smaPts = pts.map((p,i)=>`${scaleX(i)},${scaleY(p.sma)}`).join(' ');
+  const scaleX = i => labelW + pad + (i/(Math.max(n-1,1)))*(plotW-2*pad);
+  const emaPts = confirmed.map((p,i)=>`${scaleX(i)},${scaleY(p.ema)}`).join(' ');
+  const smaPts = confirmed.map((p,i)=>`${scaleX(i)},${scaleY(p.sma)}`).join(' ');
   const yBuy = scaleY(buyLevel), ySell = scaleY(sellLevel);
+
+  // live (not-yet-confirmed) point, drawn as a dashed stub off the last confirmed point
+  const lastX = n? scaleX(n-1) : labelW+pad;
+  const liveX = lastX + 16;
+  const lastEmaY = n? scaleY(confirmed[n-1].ema) : scaleY(liveEma);
+  const lastSmaY = n? scaleY(confirmed[n-1].sma) : scaleY(liveSma);
+
   return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <line x1="0" y1="${ySell}" x2="${W}" y2="${ySell}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
-    <line x1="0" y1="${yBuy}" x2="${W}" y2="${yBuy}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
+    <text x="2" y="${ySell+4}" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
+    <text x="2" y="${yBuy+4}" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
+    <line x1="${labelW}" y1="${ySell}" x2="${W}" y2="${ySell}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
+    <line x1="${labelW}" y1="${yBuy}" x2="${W}" y2="${yBuy}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
     <polyline points="${smaPts}" fill="none" stroke="#ef4444" stroke-width="1.5"/>
     <polyline points="${emaPts}" fill="none" stroke="#3b9dff" stroke-width="1.8"/>
+    <line x1="${lastX}" y1="${lastSmaY}" x2="${liveX}" y2="${scaleY(liveSma)}" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>
+    <line x1="${lastX}" y1="${lastEmaY}" x2="${liveX}" y2="${scaleY(liveEma)}" stroke="#3b9dff" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
+    <circle cx="${liveX}" cy="${scaleY(liveEma)}" r="2.5" fill="#3b9dff"/>
   </svg>`;
 }
 
@@ -419,9 +443,8 @@ function renderLiveMarkets(rows){
       </div>
       ${miniChartSvg(r.history, r.liveEma, r.liveSma, r.buyLevel, r.sellLevel)}
       <div class="mkt-vals">
-        <span>EMA9 <b class="ema-txt">${r.liveEma.toFixed(1)}</b></span>
-        <span>SMA20 <b class="sma-txt">${r.liveSma.toFixed(1)}</b></span>
-        <span>Last-closed <b>${r.lastClosedEma.toFixed(1)}</b></span>
+        <span>Last-closed (MT5-matching) <b class="ema-txt">${r.lastClosedEma.toFixed(1)}</b></span>
+        <span>Live preview <b class="sma-txt">${r.liveEma.toFixed(1)}</b></span>
       </div>
     </div>`).join('');
 }
@@ -440,10 +463,20 @@ function scanAll(){
 
   Object.values(trackers).forEach(t=>{
     if(t.forming.close==null) return;
-    const rawLive = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
-    const liveEma = emaStep(rawLive, t.emaVal, emaPeriod);
-    const liveSmaWindow = t.smaWindow.slice(1).concat([rawLive]);
-    const liveSma = liveSmaWindow.reduce((a,b)=>a+b,0)/liveSmaWindow.length;
+    const diff = t.forming.close - t.lastFinalizedClose;
+    const gainNow = Math.max(diff,0), lossNow = Math.max(-diff,0);
+
+    const emaPeriodLive = emaPeriod;
+    const liveWGain = (t.wGain*(emaPeriodLive-1)+gainNow)/emaPeriodLive;
+    const liveWLoss = (t.wLoss*(emaPeriodLive-1)+lossNow)/emaPeriodLive;
+    const liveEma = rsiFromAvg(liveWGain, liveWLoss);
+
+    const smaPeriodLive = t.gainsWindow.length;
+    const gWin = t.gainsWindow.slice(1).concat([gainNow]);
+    const lWin = t.lossesWindow.slice(1).concat([lossNow]);
+    const liveSGain = gWin.reduce((a,b)=>a+b,0)/smaPeriodLive;
+    const liveSLoss = lWin.reduce((a,b)=>a+b,0)/smaPeriodLive;
+    const liveSma = rsiFromAvg(liveSGain, liveSLoss);
 
     t.slopeSamples.push({time:now, v:liveEma});
     t.slopeSamples = t.slopeSamples.filter(s=> now-s.time <= 12*60*1000);
@@ -511,10 +544,20 @@ function checkRollover(){
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   Object.values(trackers).forEach(t=>{
     if(t.forming.startEpoch < nowBarStart && t.forming.close!=null){
-      const rawFinal = rawRsiPoint(t.forming.close, t.lastFinalizedClose);
-      t.emaVal = emaStep(rawFinal, t.emaVal, emaPeriod);
-      t.smaWindow = t.smaWindow.slice(1).concat([rawFinal]);
-      t.smaVal = t.smaWindow.reduce((a,b)=>a+b,0)/t.smaWindow.length;
+      const diff = t.forming.close - t.lastFinalizedClose;
+      const gainFinal = Math.max(diff,0), lossFinal = Math.max(-diff,0);
+
+      t.wGain = (t.wGain*(emaPeriod-1)+gainFinal)/emaPeriod;
+      t.wLoss = (t.wLoss*(emaPeriod-1)+lossFinal)/emaPeriod;
+      t.emaVal = rsiFromAvg(t.wGain, t.wLoss);
+
+      const smaPeriod = t.gainsWindow.length;
+      t.gainsWindow = t.gainsWindow.slice(1).concat([gainFinal]);
+      t.lossesWindow = t.lossesWindow.slice(1).concat([lossFinal]);
+      const sGain = t.gainsWindow.reduce((a,b)=>a+b,0)/smaPeriod;
+      const sLoss = t.lossesWindow.reduce((a,b)=>a+b,0)/smaPeriod;
+      t.smaVal = rsiFromAvg(sGain, sLoss);
+
       t.history.push({ema:t.emaVal, sma:t.smaVal});
       if(t.history.length>40) t.history.shift();
       t.lastFinalizedClose = t.forming.close;
