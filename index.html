@@ -6,7 +6,7 @@
 <title>AJ-Signal | Multi-Market RSI Scanner</title>
 <style>
   :root{
-    --bg:#0a0e14; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
+    --bg:#0a0e17; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
     --blue:#3b9dff; --blue-dim:#1c4a80; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
     --text:#e6ebf2; --sub:#7c8aa0;
     --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
@@ -79,8 +79,8 @@
   .mkt-tf{font-size:10px;color:var(--sub);font-family:var(--mono);}
   .mkt-vals{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:4px;font-family:var(--mono);}
   .mkt-vals b{color:var(--text);}
-  .ema-txt{color:var(--blue);}
-  .sma-txt{color:var(--red);}
+  .ema-txt{color:#22d3ee;}
+  .sma-txt{color:#fb923c;}
 </style>
 </head>
 <body>
@@ -403,31 +403,43 @@ function renderLog(){
 }
 
 // ---------- mini chart (SVG) for each market ----------
-function miniChartSvg(history, liveEma, liveSma, buyLevel, sellLevel){
-  const W=280, H=130, padX=28, padY=16;
-  const confirmed = history.slice(-22);
-  const n = confirmed.length;
+function gaugeSvg(emaVal, smaVal, buyLevel, sellLevel){
+  const midLevel = (buyLevel+sellLevel)/2;
+  const W=280, H=70, padX=30, axisY=36;
   const scaleX = v => padX + ((v-0)/(100-0))*(W-2*padX);
-  const scaleY = i => padY + (i/(Math.max(n-1,1)))*(H-padY-20);
-  const emaPts = confirmed.map((p,i)=>`${scaleX(p.ema)},${scaleY(i)}`).join(' ');
-  const smaPts = confirmed.map((p,i)=>`${scaleX(p.sma)},${scaleY(i)}`).join(' ');
-  const xBuy = scaleX(buyLevel), xSell = scaleX(sellLevel);
+  const xBuy=scaleX(buyLevel), xMid=scaleX(midLevel), xSell=scaleX(sellLevel);
+  const xEma=scaleX(emaVal), xSma=scaleX(smaVal);
+  const bearish = emaVal < smaVal;                 // EMA9 below SMA20 → downtrend, toward buyLevel
+  const arrowColor = bearish ? '#ef4444' : '#22c55e';
+  const targetX = bearish ? xBuy : xSell;
+  const distVal = bearish ? Math.max(0, emaVal-buyLevel) : Math.max(0, sellLevel-emaVal);
+  const tip=5;
+  const tri = bearish
+    ? `${targetX-tip*1.6},${axisY} ${targetX+tip*0.6},${axisY-tip} ${targetX+tip*0.6},${axisY+tip}`
+    : `${targetX+tip*1.6},${axisY} ${targetX-tip*0.6},${axisY-tip} ${targetX-tip*0.6},${axisY+tip}`;
 
-  const lastY = n? scaleY(n-1) : padY;
-  const liveY = lastY + 18;
-  const lastEmaX = n? scaleX(confirmed[n-1].ema) : scaleX(liveEma);
-  const lastSmaX = n? scaleX(confirmed[n-1].sma) : scaleX(liveSma);
+  return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+        <feGaussianBlur stdDeviation="2.4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <line x1="${padX}" y1="${axisY}" x2="${W-padX}" y2="${axisY}" stroke="#232c3d" stroke-width="2"/>
+    <line x1="${xBuy}" y1="8" x2="${xBuy}" y2="${H-10}" stroke="#3a5a3a" stroke-dasharray="3,3"/>
+    <line x1="${xMid}" y1="8" x2="${xMid}" y2="${H-10}" stroke="#33445a" stroke-dasharray="2,4"/>
+    <line x1="${xSell}" y1="8" x2="${xSell}" y2="${H-10}" stroke="#5a3a3a" stroke-dasharray="3,3"/>
+    <text x="${xBuy-7}" y="8" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
+    <text x="${xMid-7}" y="8" font-size="10" fill="#8090a8" font-family="monospace">${midLevel}</text>
+    <text x="${xSell-7}" y="8" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
 
-  return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <text x="${xBuy-7}" y="11" font-size="10" fill="#5a9a6a" font-family="monospace">${buyLevel}</text>
-    <text x="${xSell-7}" y="11" font-size="10" fill="#b06a6a" font-family="monospace">${sellLevel}</text>
-    <line x1="${xBuy}" y1="14" x2="${xBuy}" y2="${H}" stroke="#2c3a2c" stroke-dasharray="3,3"/>
-    <line x1="${xSell}" y1="14" x2="${xSell}" y2="${H}" stroke="#3a2c2c" stroke-dasharray="3,3"/>
-    <polyline points="${smaPts}" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-    <polyline points="${emaPts}" fill="none" stroke="#3b9dff" stroke-width="1.8"/>
-    <line x1="${lastSmaX}" y1="${lastY}" x2="${scaleX(liveSma)}" y2="${liveY}" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>
-    <line x1="${lastEmaX}" y1="${lastY}" x2="${scaleX(liveEma)}" y2="${liveY}" stroke="#3b9dff" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
-    <circle cx="${scaleX(liveEma)}" cy="${liveY}" r="2.5" fill="#3b9dff"/>
+    <line x1="${xEma}" y1="${axisY}" x2="${targetX}" y2="${axisY}" stroke="${arrowColor}" stroke-width="2.2" filter="url(#glow)"/>
+    <polygon points="${tri}" fill="${arrowColor}" filter="url(#glow)"/>
+
+    <circle cx="${xSma}" cy="${axisY}" r="4" fill="#fb923c" opacity="0.9"/>
+    <circle cx="${xEma}" cy="${axisY}" r="5.5" fill="#22d3ee" filter="url(#glow)"/>
+
+    <text x="${W-padX}" y="${H-2}" font-size="9" fill="#7c8aa0" font-family="monospace" text-anchor="end">Δ ${distVal.toFixed(1)} to ${bearish?buyLevel:sellLevel}</text>
   </svg>`;
 }
 
@@ -439,10 +451,11 @@ function renderLiveMarkets(rows){
         <span class="mkt-name">${r.symbol}</span>
         <span class="mkt-tf">${TF_LABELS[activeGranularity]||''}</span>
       </div>
-      ${miniChartSvg(r.history, r.liveEma, r.liveSma, r.buyLevel, r.sellLevel)}
+      ${gaugeSvg(r.liveEma, r.liveSma, r.buyLevel, r.sellLevel)}
       <div class="mkt-vals">
-        <span>Last-closed (MT5-matching) <b class="ema-txt">${r.lastClosedEma.toFixed(1)}</b></span>
-        <span>Live preview <b class="sma-txt">${r.liveEma.toFixed(1)}</b></span>
+        <span>EMA9 <b class="ema-txt">${r.liveEma.toFixed(1)}</b></span>
+        <span>SMA20 <b class="sma-txt">${r.liveSma.toFixed(1)}</b></span>
+        <span>Last-closed <b>${r.lastClosedEma.toFixed(1)}</b></span>
       </div>
     </div>`).join('');
 }
