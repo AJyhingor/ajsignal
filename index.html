@@ -86,9 +86,9 @@
   <header>
     <div class="brand">
       <div class="dot" id="liveDot"></div>
-      <div><h1>AJ-SIGNAL</h1><span class="sub">Multi-Timeframe EMA/SMA Scanner · 13 markets × 7 timeframes</span></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub">Multi-Timeframe EMA/SMA Scanner · 13 markets × 5 timeframes</span></div>
     </div>
-    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 91 series ready</span></div>
+    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 65 series ready</span></div>
   </header>
 
   <div class="grid">
@@ -104,7 +104,7 @@
           <div class="sw active" id="soundToggle"></div>
         </div>
         <div class="row" style="margin-top:10px;">
-          <button class="btn" id="startBtn" style="flex:1;">▶ Start / Restart Watching (all 91)</button>
+          <button class="btn" id="startBtn" style="flex:1;">▶ Start / Restart Watching (all 65)</button>
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@
   </div>
 
   <div class="panel">
-    <h2 class="clickable" id="liveMarketsToggle">Live Markets (7 timeframes each) <span class="caret" id="liveMarketsCaret">▽</span></h2>
+    <h2 class="clickable" id="liveMarketsToggle">Live Markets (5 timeframes each) <span class="caret" id="liveMarketsCaret">▽</span></h2>
     <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
   </div>
 
@@ -146,7 +146,7 @@ const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsC
 const logBody=$('logBody'), logEmpty=$('logEmpty');
 
 const TIMEFRAMES = [
-  {g:60,label:'1M'},{g:300,label:'5M'},{g:900,label:'15M'},{g:1800,label:'30M'},
+  {g:900,label:'15M'},{g:1800,label:'30M'},
   {g:3600,label:'1H'},{g:14400,label:'4H'},{g:86400,label:'D1'}
 ];
 
@@ -345,7 +345,7 @@ async function startWatching(){
     }
   }
   scheduleRender();
-  startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 91)';
+  startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 65)';
 }
 
 // ---------- alerts ----------
