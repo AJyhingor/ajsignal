@@ -438,6 +438,15 @@ liveMarketsToggle.addEventListener('click', ()=>{
   if(liveMarketsOpen) renderAll();
 });
 
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'){
+    if(!ws || ws.readyState===WebSocket.CLOSED || ws.readyState===WebSocket.CLOSING){
+      connLabel.textContent = 'Reconnecting…';
+      connect();
+    }
+  }
+});
+
 connect();
 })();
 </script>
