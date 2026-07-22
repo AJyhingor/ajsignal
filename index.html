@@ -100,7 +100,7 @@
         <div class="row"><label>Buy level</label><input type="number" id="buyLevelInp" value="12" min="0" max="49"></div>
         <div class="row"><label>Sell level</label><input type="number" id="sellLevelInp" value="88" min="51" max="100"></div>
         <div class="row">
-          <div class="toggle-line"><label>Sound on signal</label></div>
+          <div class="toggle-line"><label>Sound on MAJOR signal</label></div>
           <div class="sw active" id="soundToggle"></div>
         </div>
         <div class="row" style="margin-top:10px;">
@@ -113,7 +113,7 @@
       <div class="panel">
         <h2>Signal Log</h2>
         <div class="scroll">
-          <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Type</th></tr></thead>
+          <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Type</th><th>Tier</th></tr></thead>
           <tbody id="logBody"></tbody></table>
         </div>
         <div class="empty" id="logEmpty">No signals fired yet</div>
@@ -126,7 +126,7 @@
     <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
   </div>
 
-  <div class="footnote">Every market is tracked on all 5 timeframes at once, using genuine closed-candle data (never the still-forming candle) — signals only fire once a candle has fully closed. A signal fires the moment EMA9's position reaches level 12 (BUY) or 88 (SELL), and won't repeat again until it returns to the middle zone first. SMA is shown for reference only and no longer required for a signal to fire. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="footnote">Every market is tracked on all 5 timeframes at once, using genuine closed-candle data (never the still-forming candle) — signals only fire once a candle has fully closed, and never repeat for the same crossover. MAJOR = EMA/SMA crossover confirmed at/beyond the 12/88 edge; MINOR = crossover confirmed inside the middle zone. Position shown per row is EMA's normalized location in its recent range. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -270,12 +270,12 @@ async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
       closesConfirmed: confirmed,
       formingEpoch: Number(last.epoch), formingClose: Number(last.close),
       lastPrice: Number(last.close),
-      prevZone:null, emaVal:null, smaVal:null
+      prevSign:null, emaVal:null, smaVal:null
     };
     trackers[key]=tracker;
     if(resp.subscription && resp.subscription.id) subIdToKey[resp.subscription.id]=key;
 
-    evaluateSignal(tracker, true); // establish baseline zone only, no firing
+    evaluateSignal(tracker, true); // establish baseline sign only, no firing
     return tracker;
   }catch(err){
     console.warn('Seed failed for', key, err);
@@ -302,8 +302,8 @@ function handleOhlcPush(t, ohlc){
   scheduleRender();
 }
 
-// EMA9 touching a level directly triggers the signal — no crossover/SMA condition required.
-// SMA is still computed and shown for visual reference, but no longer gates the trigger.
+// MAJOR: EMA crosses SMA with the crossover confirmed at/beyond the 12/88 edge.
+// MINOR: EMA crosses SMA with the crossover confirmed inside the 12-88 middle zone.
 function evaluateSignal(t, seedOnly){
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   const smaPeriod = parseInt(smaPeriodInp.value)||14;
@@ -316,15 +316,19 @@ function evaluateSignal(t, seedOnly){
   if(ema==null||sma==null) return;
   t.emaVal=ema; t.smaVal=sma;
 
-  const pos = normalizedPosition(ema, t.closesConfirmed, buyLevel, sellLevel).raw;
-  const zone = pos<=buyLevel ? 'buy' : (pos>=sellLevel ? 'sell' : 'mid');
+  const diff = ema-sma;
+  const sign = diff>0?1:(diff<0?-1:0);
 
-  if(!seedOnly && t.prevZone!=null && zone!==t.prevZone){
-    if(zone==='buy') logSignal(t.displayName, t.tfLabel, 'BUY');
-    else if(zone==='sell') logSignal(t.displayName, t.tfLabel, 'SELL');
-    // entering 'mid' from either side fires nothing — only entering buy/sell zones does
+  if(!seedOnly && t.prevSign!=null && sign!==0 && t.prevSign!==0 && sign!==t.prevSign){
+    const bullishCross = sign>0;
+    const pos = normalizedPosition(ema, t.closesConfirmed, buyLevel, sellLevel).raw;
+    let tier, type;
+    if(bullishCross && pos<buyLevel){ tier='MAJOR'; type='BUY'; }
+    else if(!bullishCross && pos>sellLevel){ tier='MAJOR'; type='SELL'; }
+    else { tier='MINOR'; type = bullishCross?'BUY':'SELL'; }
+    logSignal(t.displayName, t.tfLabel, type, tier);
   }
-  t.prevZone = zone;
+  t.prevSign = sign;
 }
 
 async function startWatching(){
@@ -367,18 +371,19 @@ function alarm(){
     setTimeout(()=>{ try{ctx.close();}catch(e){} }, duration*1000+500);
   }catch(e){}
 }
-function logSignal(displayName, tfLabel, type){
+function logSignal(displayName, tfLabel, type, tier){
   const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  logEntries.unshift({time, displayName, tfLabel, type});
+  logEntries.unshift({time, displayName, tfLabel, type, tier});
   if(logEntries.length>400) logEntries.pop();
   renderLog();
-  alarm();
+  if(tier==='MAJOR') alarm();
 }
 function renderLog(){
   logEmpty.style.display = logEntries.length ? 'none':'block';
   logBody.innerHTML = logEntries.slice(0,120).map(e=>`
     <tr><td>${e.time}</td><td>${e.displayName}</td><td>${e.tfLabel}</td>
-    <td class="${e.type==='BUY'?'buy':'sell'}">${e.type}</td></tr>`).join('');
+    <td class="${e.type==='BUY'?'buy':'sell'}">${e.type}</td>
+    <td><span class="${e.tier==='MAJOR'?'major':'minor'}">${e.tier}</span></td></tr>`).join('');
 }
 
 // ---------- render (throttled — many series updating fast would thrash the DOM otherwise) ----------
