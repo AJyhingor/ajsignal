@@ -191,6 +191,7 @@ let resolvedMarkets=[];
 let logEntries=[];
 let liveMarketsOpen=true;
 let renderPending=false;
+let manualDisconnect=false;
 
 function send(payload){
   return new Promise((resolve,reject)=>{
@@ -207,7 +208,15 @@ function connect(){
     liveDot.classList.add('live'); connLabel.textContent='Connected';
     resolveMarkets();
   };
-  ws.onclose=()=>{ liveDot.classList.remove('live'); connLabel.textContent='Disconnected'; };
+  ws.onclose=()=>{
+    liveDot.classList.remove('live'); connLabel.textContent='Disconnected';
+    if(!manualDisconnect){
+      setTimeout(()=>{
+        connLabel.textContent='Reconnecting…';
+        connect();
+      }, 3000);
+    }
+  };
   ws.onerror=(e)=>{ connLabel.textContent='Connection error'; showError('WebSocket connection error — check your internet connection or try reloading.'); };
   ws.onmessage=(msg)=>{
     let data; try{data=JSON.parse(msg.data);}catch(e){return;}
@@ -274,7 +283,7 @@ function normalizedPosition(value, recentCloses, buyLevel, sellLevel){
 async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
   const key = symbol+'__'+granularity;
   try{
-    const resp = await send({ticks_history:symbol, style:"candles", granularity, count:200, end:"latest", subscribe:1});
+    const resp = await send({ticks_history:symbol, style:"candles", granularity, count:100, end:"latest", subscribe:1});
     const candles = resp.candles||[];
     const emaPeriod = parseInt(emaPeriodInp.value)||9, smaPeriod = parseInt(smaPeriodInp.value)||14;
     if(candles.length < Math.max(emaPeriod,smaPeriod)+3) return null;
@@ -350,18 +359,34 @@ function evaluateSignal(t, seedOnly){
 }
 
 async function startWatching(){
+  if(!ws || ws.readyState!==1){
+    showError('Not connected — tap Start Watching again once the header shows "Connected".');
+    return;
+  }
   startBtn.disabled = true;
   trackers = {}; subIdToKey = {};
   const activeMarkets = resolvedMarkets.filter(m=>m.found);
   const total = activeMarkets.length * TIMEFRAMES.length;
-  let done = 0;
+  let done = 0, failures = 0, firstFailureShown = false;
   for(const m of activeMarkets){
     for(const tf of TIMEFRAMES){
+      if(!ws || ws.readyState!==1){
+        showError(`Connection dropped after seeding ${done}/${total} series. It will auto-reconnect and you can tap Start Watching again once it says "Connected".`);
+        startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 65)';
+        return;
+      }
       startBtn.textContent = `Loading ${done+1}/${total}…`;
-      await seedAndSubscribe(m.symbol, tf.g, tf.label, m.short);
+      const tr = await seedAndSubscribe(m.symbol, tf.g, tf.label, m.short);
+      if(!tr){
+        failures++;
+        if(!firstFailureShown){
+          showError(`Failed to load ${m.short} (${tf.label}) — will keep trying the rest. If most fail, the connection may be rate-limited; try again in a minute.`);
+          firstFailureShown = true;
+        }
+      }
       done++;
-      symCount.textContent = `${done} / ${total} series ready`;
-      await new Promise(r=>setTimeout(r,70));
+      symCount.textContent = `${done} / ${total} series ready` + (failures? ` (${failures} failed)`:'');
+      await new Promise(r=>setTimeout(r,250));
     }
   }
   scheduleRender();
