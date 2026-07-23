@@ -150,7 +150,7 @@ window.addEventListener('unhandledrejection', e=>{
   showError('UNHANDLED PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)));
 });
 
-const APP_ID = 117974;
+const APP_ID = 1089;
 const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
 const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
@@ -193,11 +193,20 @@ let liveMarketsOpen=true;
 let renderPending=false;
 let manualDisconnect=false;
 
-function send(payload){
+function send(payload, timeoutMs=10000){
   return new Promise((resolve,reject)=>{
     if(!ws||ws.readyState!==1){reject(new Error('not connected'));return;}
     const req_id=reqCounter++; payload.req_id=req_id;
-    pending[req_id]={resolve,reject};
+    const timer = setTimeout(()=>{
+      if(pending[req_id]){
+        delete pending[req_id];
+        reject(new Error('Timed out waiting for response to: '+JSON.stringify(payload)));
+      }
+    }, timeoutMs);
+    pending[req_id]={
+      resolve:(data)=>{ clearTimeout(timer); resolve(data); },
+      reject:(err)=>{ clearTimeout(timer); reject(err); }
+    };
     ws.send(JSON.stringify(payload));
   });
 }
@@ -253,7 +262,7 @@ async function resolveMarkets(){
     startWatching();
   }catch(err){
     connLabel.textContent = 'Symbol list failed';
-    showError('Could not load symbol list: ' + JSON.stringify(err));
+    showError('Could not load symbol list: ' + (err && err.message ? err.message : JSON.stringify(err)));
     console.error('Could not load symbol list:', err);
   }
 }
