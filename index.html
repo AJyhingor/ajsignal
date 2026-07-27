@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#0a0e17; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
-    --blue:#00aaff; --green:#22c55e; --red:#ef4444; --amber:#f5a623; --orange:#f97316;
+    --blue:#00aaff; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
     --text:#e6ebf2; --sub:#7c8aa0;
     --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -16,6 +16,11 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
   body{min-height:100vh;padding:14px;}
   .wrap{max-width:1100px;margin:0 auto;}
+
+  #errBanner{display:none;background:#3a0f0f;border:1px solid var(--red);color:#fecaca;
+    border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-family:var(--mono);
+    white-space:pre-wrap;word-break:break-word;}
+
   header{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     background:linear-gradient(180deg,#0d1420,#0a0e14);border:1px solid var(--line);
@@ -48,8 +53,9 @@
   }
   input:focus{border-color:var(--blue);}
   .btn{background:#1c4a80;color:#cfe6ff;border:1px solid var(--blue);border-radius:7px;
-    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);width:100%;}
   .btn:hover{background:var(--blue);color:#04101d;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
 
   table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
   thead th{text-align:left;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;padding:4px 6px;border-bottom:1px solid var(--line);}
@@ -77,15 +83,12 @@
   .pos-buy{color:var(--green);}
   .pos-sell{color:var(--red);}
   .pos-mid{color:var(--sub);}
-  .progress{background:var(--bg);border-radius:6px;overflow:hidden;height:14px;position:relative;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div id="errBanner" style="display:none;background:#3a0f0f;border:1px solid #ef4444;color:#fecaca;
-    border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-family:monospace;
-    white-space:pre-wrap;word-break:break-word;"></div>
+  <div id="errBanner"></div>
 
   <header>
     <div class="brand">
@@ -96,32 +99,28 @@
   </header>
 
   <div class="grid">
-    <div>
-      <div class="panel">
-        <h2>Settings</h2>
-        <div class="row"><label>EMA period</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
-        <div class="row"><label>SMA period</label><input type="number" id="smaPeriodInp" value="14" min="2" max="100"></div>
-        <div class="row"><label>Buy level</label><input type="number" id="buyLevelInp" value="12" min="0" max="49"></div>
-        <div class="row"><label>Sell level</label><input type="number" id="sellLevelInp" value="88" min="51" max="100"></div>
-        <div class="row">
-          <div class="toggle-line"><label>Sound on MAJOR signal</label></div>
-          <div class="sw active" id="soundToggle"></div>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn" id="startBtn" style="flex:1;">▶ Start / Restart Watching (all 65)</button>
-        </div>
+    <div class="panel">
+      <h2>Settings</h2>
+      <div class="row"><label>EMA period</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
+      <div class="row"><label>SMA period</label><input type="number" id="smaPeriodInp" value="14" min="2" max="100"></div>
+      <div class="row"><label>Buy level</label><input type="number" id="buyLevelInp" value="12" min="0" max="49"></div>
+      <div class="row"><label>Sell level</label><input type="number" id="sellLevelInp" value="88" min="51" max="100"></div>
+      <div class="row">
+        <div class="toggle-line"><label>Sound on MAJOR signal</label></div>
+        <div class="sw active" id="soundToggle"></div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" id="startBtn">▶ Start / Restart Watching (all 65)</button>
       </div>
     </div>
 
-    <div>
-      <div class="panel">
-        <h2>Signal Log</h2>
-        <div class="scroll">
-          <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Type</th><th>Tier</th></tr></thead>
-          <tbody id="logBody"></tbody></table>
-        </div>
-        <div class="empty" id="logEmpty">No signals fired yet</div>
+    <div class="panel">
+      <h2>Signal Log</h2>
+      <div class="scroll">
+        <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Type</th><th>Tier</th></tr></thead>
+        <tbody id="logBody"></tbody></table>
       </div>
+      <div class="empty" id="logEmpty">No signals fired yet</div>
     </div>
   </div>
 
@@ -130,7 +129,7 @@
     <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
   </div>
 
-  <div class="footnote">Every market is tracked on all 5 timeframes at once, using genuine closed-candle data (never the still-forming candle) — signals only fire once a candle has fully closed, and never repeat for the same crossover. MAJOR = EMA/SMA crossover confirmed at/beyond the 12/88 edge; MINOR = crossover confirmed inside the middle zone. Position shown per row is EMA's normalized location in its recent range. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="footnote">EMA9/SMA14 are computed on raw price closes. Every market is tracked on all 5 timeframes at once, using genuine closed-candle data only — signals never evaluate on the still-forming candle, and never repeat for the same crossover. MAJOR = EMA/SMA crossover confirmed at/beyond the 12/88 edge; MINOR = crossover confirmed inside the middle zone. Position shown per row is EMA's normalized location in its recent range. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -138,6 +137,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 
+// ---------- visible error reporting (no devtools needed) ----------
 const errBanner = $('errBanner');
 function showError(msg){
   errBanner.style.display='block';
@@ -150,16 +150,8 @@ window.addEventListener('unhandledrejection', e=>{
   showError('UNHANDLED PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)));
 });
 
+// ---------- config ----------
 const WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
-
-const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
-const startBtn=$('startBtn');
-const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
-const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
-const soundToggle=$('soundToggle');
-const liveMarketsBody=$('liveMarketsBody'), liveMarketsEmpty=$('liveMarketsEmpty');
-const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsCaret');
-const logBody=$('logBody'), logEmpty=$('logEmpty');
 
 const TIMEFRAMES = [
   {g:900,label:'15M'},{g:1800,label:'30M'},
@@ -182,9 +174,21 @@ const TARGET_MARKETS = [
   {label:'Volatility 10 Index',  short:'V10',        patterns:['volatility 10'],  avoid:['1s']}
 ];
 
-let ws=null, reqCounter=1; const pending={};
+// ---------- DOM refs ----------
+const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
+const startBtn=$('startBtn');
+const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
+const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
+const soundToggle=$('soundToggle');
+const liveMarketsBody=$('liveMarketsBody'), liveMarketsEmpty=$('liveMarketsEmpty');
+const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsCaret');
+const logBody=$('logBody'), logEmpty=$('logEmpty');
+
+// ---------- state ----------
+let ws=null, reqCounter=1;
+const pending={};
 let soundOn=true;
-let trackers={};       // key "SYMBOL__granularity" -> tracker
+let trackers={};        // key "SYMBOL__granularity" -> tracker
 let subIdToKey={};      // subscription id -> key, for routing pushes reliably
 let resolvedMarkets=[];
 let logEntries=[];
@@ -192,15 +196,13 @@ let liveMarketsOpen=true;
 let renderPending=false;
 let manualDisconnect=false;
 
+// ---------- WS plumbing ----------
 function send(payload, timeoutMs=10000){
   return new Promise((resolve,reject)=>{
     if(!ws||ws.readyState!==1){reject(new Error('not connected'));return;}
     const req_id=reqCounter++; payload.req_id=req_id;
-    const timer = setTimeout(()=>{
-      if(pending[req_id]){
-        delete pending[req_id];
-        reject(new Error('Timed out waiting for response to: '+JSON.stringify(payload)));
-      }
+    const timer=setTimeout(()=>{
+      if(pending[req_id]){ delete pending[req_id]; reject(new Error('Timed out waiting for response to: '+JSON.stringify(payload))); }
     }, timeoutMs);
     pending[req_id]={
       resolve:(data)=>{ clearTimeout(timer); resolve(data); },
@@ -219,13 +221,13 @@ function connect(){
   ws.onclose=()=>{
     liveDot.classList.remove('live'); connLabel.textContent='Disconnected';
     if(!manualDisconnect){
-      setTimeout(()=>{
-        connLabel.textContent='Reconnecting…';
-        connect();
-      }, 3000);
+      setTimeout(()=>{ connLabel.textContent='Reconnecting…'; connect(); }, 3000);
     }
   };
-  ws.onerror=(e)=>{ connLabel.textContent='Connection error'; showError('WebSocket connection error — check your internet connection or try reloading.'); };
+  ws.onerror=()=>{
+    connLabel.textContent='Connection error';
+    showError('WebSocket connection error — check your internet connection or try reloading.');
+  };
   ws.onmessage=(msg)=>{
     let data; try{data=JSON.parse(msg.data);}catch(e){return;}
     if(data.req_id && pending[data.req_id]){
@@ -248,7 +250,7 @@ async function resolveMarkets(){
     const normalized = list.map(s=>{
       const sym = s.underlying_symbol || s.symbol;
       const nm = s.underlying_symbol_name || s.display_name || sym;
-      return {symbol:sym, name:nm, nameLower:(nm||'').toLowerCase()};
+      return {symbol:sym, nameLower:(nm||'').toLowerCase()};
     });
     resolvedMarkets = TARGET_MARKETS.map(target=>{
       const avoid = target.avoid||[];
@@ -258,15 +260,16 @@ async function resolveMarkets(){
       );
       return {label:target.label, short:target.short, symbol: match?match.symbol:null, found:!!match};
     });
+    const missing = resolvedMarkets.filter(m=>!m.found).map(m=>m.label);
+    if(missing.length) showError('Could not match these markets by name: '+missing.join(', '));
     startWatching();
   }catch(err){
     connLabel.textContent = 'Symbol list failed';
     showError('Could not load symbol list: ' + (err && err.message ? err.message : JSON.stringify(err)));
-    console.error('Could not load symbol list:', err);
   }
 }
 
-// ---------- EMA / SMA on confirmed closes only ----------
+// ---------- EMA / SMA on raw price ----------
 function calcSMA(arr,n){
   if(arr.length<n) return null;
   let sum=0; for(let i=arr.length-n;i<arr.length;i++) sum+=arr[i];
@@ -288,6 +291,7 @@ function normalizedPosition(value, recentCloses, buyLevel, sellLevel){
   return {raw};
 }
 
+// ---------- seeding + live updates ----------
 async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
   const key = symbol+'__'+granularity;
   try{
@@ -296,7 +300,7 @@ async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
     const emaPeriod = parseInt(emaPeriodInp.value)||9, smaPeriod = parseInt(smaPeriodInp.value)||14;
     if(candles.length < Math.max(emaPeriod,smaPeriod)+3) return null;
 
-    // treat the last candle as still-forming (not yet closed) — no-repaint discipline
+    // last candle treated as still-forming (not yet closed) — no-repaint discipline
     const confirmed = candles.slice(0,-1).map(c=>Number(c.close));
     const last = candles[candles.length-1];
 
@@ -310,7 +314,7 @@ async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
     trackers[key]=tracker;
     if(resp.subscription && resp.subscription.id) subIdToKey[resp.subscription.id]=key;
 
-    evaluateSignal(tracker, true); // establish baseline sign only, no firing
+    evaluateSignal(tracker, true); // establish baseline sign, no firing
     return tracker;
   }catch(err){
     console.warn('Seed failed for', key, err);
@@ -322,14 +326,13 @@ function handleOhlcPush(t, ohlc){
   const incomingEpoch = Number(ohlc.open_time || ohlc.epoch);
   const closeVal = Number(ohlc.close);
   if(t.formingEpoch!=null && incomingEpoch > t.formingEpoch){
-    // the previously-forming candle has now closed — commit it, then evaluate (no-repaint)
+    // previously-forming candle just closed — commit it, then evaluate (no-repaint)
     t.closesConfirmed.push(t.formingClose);
     if(t.closesConfirmed.length>250) t.closesConfirmed.shift();
     t.formingEpoch = incomingEpoch;
     t.formingClose = closeVal;
     evaluateSignal(t, false);
   } else {
-    // still the same forming candle — just track the live price, do NOT evaluate signals from this
     t.formingEpoch = incomingEpoch;
     t.formingClose = closeVal;
   }
@@ -337,8 +340,8 @@ function handleOhlcPush(t, ohlc){
   scheduleRender();
 }
 
-// MAJOR: EMA crosses SMA with the crossover confirmed at/beyond the 12/88 edge.
-// MINOR: EMA crosses SMA with the crossover confirmed inside the 12-88 middle zone.
+// MAJOR: EMA/SMA crossover confirmed at/beyond the 12/88 edge.
+// MINOR: crossover confirmed inside the 12-88 middle zone.
 function evaluateSignal(t, seedOnly){
   const emaPeriod = parseInt(emaPeriodInp.value)||9;
   const smaPeriod = parseInt(smaPeriodInp.value)||14;
@@ -374,13 +377,18 @@ async function startWatching(){
   startBtn.disabled = true;
   trackers = {}; subIdToKey = {};
   const activeMarkets = resolvedMarkets.filter(m=>m.found);
+  if(activeMarkets.length===0){
+    showError('No markets resolved — the symbol list may not have matched any target names.');
+    startBtn.disabled=false;
+    return;
+  }
   const total = activeMarkets.length * TIMEFRAMES.length;
-  let done = 0, failures = 0, firstFailureShown = false;
+  let done=0, failures=0, firstFailureShown=false;
   for(const m of activeMarkets){
     for(const tf of TIMEFRAMES){
       if(!ws || ws.readyState!==1){
-        showError(`Connection dropped after seeding ${done}/${total} series. It will auto-reconnect and you can tap Start Watching again once it says "Connected".`);
-        startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 65)';
+        showError(`Connection dropped after seeding ${done}/${total} series. It will auto-reconnect — tap Start Watching again once it says "Connected".`);
+        startBtn.disabled=false;
         return;
       }
       startBtn.textContent = `Loading ${done+1}/${total}…`;
@@ -388,7 +396,7 @@ async function startWatching(){
       if(!tr){
         failures++;
         if(!firstFailureShown){
-          showError(`Failed to load ${m.short} (${tf.label}) — will keep trying the rest. If most fail, the connection may be rate-limited; try again in a minute.`);
+          showError(`Failed to load ${m.short} (${tf.label}) — will keep trying the rest.`);
           firstFailureShown = true;
         }
       }
@@ -437,7 +445,7 @@ function renderLog(){
     <td><span class="${e.tier==='MAJOR'?'major':'minor'}">${e.tier}</span></td></tr>`).join('');
 }
 
-// ---------- render (throttled — many series updating fast would thrash the DOM otherwise) ----------
+// ---------- render (throttled) ----------
 function scheduleRender(){
   if(renderPending) return;
   renderPending = true;
@@ -490,7 +498,6 @@ liveMarketsToggle.addEventListener('click', ()=>{
   liveMarketsCaret.textContent = liveMarketsOpen ? '▽' : '▷';
   if(liveMarketsOpen) renderAll();
 });
-
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible'){
     if(!ws || ws.readyState===WebSocket.CLOSED || ws.readyState===WebSocket.CLOSING){
@@ -504,7 +511,7 @@ setTimeout(()=>{
   if(!ws || ws.readyState!==1){
     showError('Still not connected after 8 seconds. This usually means either your network is blocking WebSocket connections, or Deriv is unreachable right now. Try reloading, or try a different network (wifi vs mobile data).');
   } else if(Object.keys(trackers).length===0){
-    showError('Connected, but no markets have loaded yet after 8 seconds — this may just mean seeding is still in progress (65 series take a while), or the symbol list fetch failed silently.');
+    showError('Connected, but no markets have loaded yet after 8 seconds — this may just mean seeding is still in progress, or the symbol list fetch failed silently.');
   }
 }, 8000);
 
