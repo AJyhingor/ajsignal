@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AJ-Signal | Multi-Timeframe EMA/SMA Scanner</title>
+<title>AJ-Signal | Smart Money Pattern Scanner</title>
 <style>
   :root{
     --bg:#0a0e17; --panel:#10151f; --panel2:#141b28; --line:#212a3a;
-    --blue:#00aaff; --green:#22c55e; --red:#ef4444; --amber:#f5a623;
+    --blue:#00aaff; --green:#22c55e; --red:#ef4444; --amber:#f5a623; --purple:#a78bfa;
     --text:#e6ebf2; --sub:#7c8aa0;
     --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -16,11 +16,9 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
   body{min-height:100vh;padding:14px;}
   .wrap{max-width:1100px;margin:0 auto;}
-
   #errBanner{display:none;background:#3a0f0f;border:1px solid var(--red);color:#fecaca;
     border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-family:var(--mono);
     white-space:pre-wrap;word-break:break-word;}
-
   header{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     background:linear-gradient(180deg,#0d1420,#0a0e14);border:1px solid var(--line);
@@ -33,21 +31,18 @@
   header span.sub{font-size:11px;color:var(--sub);display:block;}
   .conn{font-size:12px;color:var(--sub);text-align:right;}
   .conn b{color:var(--text);display:block;font-size:13px;}
-
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media(max-width:900px){.grid{grid-template-columns:1fr;}}
-
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
-  .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--blue);margin:0 0 12px;font-weight:700;display:flex;gap:6px;align-items:center;cursor:default;}
+  .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--blue);margin:0 0 12px;font-weight:700;display:flex;gap:6px;align-items:center;}
   .panel h2::before{content:"";width:3px;height:11px;background:var(--blue);border-radius:2px;}
   .panel h2.clickable{cursor:pointer;justify-content:space-between;}
   .caret{transition:transform .15s;font-size:12px;}
   .caret.closed{transform:rotate(-90deg);}
-
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;}
   .row:last-child{margin-bottom:0;}
   label{font-size:12px;color:var(--sub);}
-  input{
+  input,select{
     background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;
     padding:6px 8px;font-family:var(--mono);font-size:13px;width:64px;text-align:center;outline:none;
   }
@@ -56,16 +51,14 @@
     padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);width:100%;}
   .btn:hover{background:var(--blue);color:#04101d;}
   .btn:disabled{opacity:.5;cursor:not-allowed;}
-
   table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
   thead th{text-align:left;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;padding:4px 6px;border-bottom:1px solid var(--line);}
   tbody td{padding:5px 6px;border-bottom:1px solid #161d29;}
   tbody tr:hover{background:#121a26;}
   .buy{color:var(--green);font-weight:700;}
   .sell{color:var(--red);font-weight:700;}
-  .major{font-size:9px;background:#3a2c0f;color:var(--amber);padding:1px 5px;border-radius:8px;}
-  .minor{font-size:9px;background:#1c2433;color:var(--sub);padding:1px 5px;border-radius:8px;}
-  .scroll{max-height:260px;overflow-y:auto;}
+  .pat{font-size:9px;background:#1c2433;color:var(--purple);padding:1px 5px;border-radius:8px;white-space:nowrap;}
+  .scroll{max-height:300px;overflow-y:auto;}
   .scroll::-webkit-scrollbar{width:6px;}
   .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   .empty{color:var(--sub);font-size:12px;text-align:center;padding:16px 0;}
@@ -75,25 +68,23 @@
   .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#5c6779;transition:.2s;}
   .sw.active{background:#123b25;border-color:var(--green);}
   .sw.active::after{transform:translateX(18px);background:var(--green);}
-
   .mkt-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--panel2);}
   .mkt-name{font-weight:700;font-size:13px;margin-bottom:6px;}
   .tf-table td{padding:3px 5px;font-size:11px;}
   .tf-table th{padding:3px 5px;font-size:9px;}
-  .pos-buy{color:var(--green);}
-  .pos-sell{color:var(--red);}
-  .pos-mid{color:var(--sub);}
+  .trend-b{color:var(--green);}
+  .trend-s{color:var(--red);}
+  .trend-n{color:var(--sub);}
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <div id="errBanner"></div>
 
   <header>
     <div class="brand">
       <div class="dot" id="liveDot"></div>
-      <div><h1>AJ-SIGNAL</h1><span class="sub">Multi-Timeframe EMA/SMA Scanner · 13 markets × 5 timeframes</span></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub">Smart Money Pattern Scanner · 13 markets × 5 timeframes</span></div>
     </div>
     <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 65 series ready</span></div>
   </header>
@@ -101,10 +92,9 @@
   <div class="grid">
     <div class="panel">
       <h2>Settings</h2>
-      <div class="row"><label>EMA period</label><input type="number" id="emaPeriodInp" value="9" min="2" max="50"></div>
-      <div class="row"><label>SMA period</label><input type="number" id="smaPeriodInp" value="20" min="2" max="100"></div>
-      <div class="row"><label>Buy level</label><input type="number" id="buyLevelInp" value="12" min="0" max="49"></div>
-      <div class="row"><label>Sell level</label><input type="number" id="sellLevelInp" value="88" min="51" max="100"></div>
+      <div class="row"><label>Swing lookback (bars)</label><input type="number" id="swingLookInp" value="2" min="1" max="5"></div>
+      <div class="row"><label>Double-pattern tolerance %</label><input type="number" id="doubleTolInp" value="0.3" min="0.05" max="2" step="0.05"></div>
+      <div class="row"><label>Retest window (bars)</label><input type="number" id="retestWindowInp" value="20" min="3" max="60"></div>
       <div class="row">
         <div class="toggle-line"><label>Sound on signal</label></div>
         <div class="sw active" id="soundToggle"></div>
@@ -117,7 +107,7 @@
     <div class="panel">
       <h2>Signal Log</h2>
       <div class="scroll">
-        <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Type</th></tr></thead>
+        <table><thead><tr><th>Time</th><th>Asset</th><th>TF</th><th>Pattern</th><th>Type</th></tr></thead>
         <tbody id="logBody"></tbody></table>
       </div>
       <div class="empty" id="logEmpty">No signals fired yet</div>
@@ -129,7 +119,7 @@
     <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
   </div>
 
-  <div class="footnote">EMA9/SMA20 are computed on raw price closes. Every market is tracked on all 5 timeframes at once, using genuine closed-candle data only — signals never evaluate on the still-forming candle. A BUY fires when EMA crosses above SMA; a SELL fires when EMA crosses below SMA — never repeating for the same crossover. Position shown per row is EMA's normalized location in its recent range, for reference. This tool only reads public market data; it does not place trades. Not financial advice.</div>
+  <div class="footnote">Pattern detection: swing points confirmed after N bars close on both sides → BOS (close beyond last swing) → CHoCH (first opposite-direction break, trend flip) → Order Block (last opposite candle before the BOS move) → FVG (3-candle gap) → entry fires on retest of OB/FVG zones. Liquidity Sweep = wick beyond a swing with a reversal close. Classic breakout+retest and Double Top/Bottom use the same confirmed swings. All signals only evaluate on closed candles — never the still-forming one. These are heuristic translations of discretionary chart patterns, not guaranteed detections — expect some judgment calls to differ from what you'd mark by eye. This tool only reads public market data; it does not place trades. Not financial advice.</div>
 </div>
 
 <script>
@@ -137,7 +127,6 @@
 "use strict";
 const $=id=>document.getElementById(id);
 
-// ---------- visible error reporting (no devtools needed) ----------
 const errBanner = $('errBanner');
 function showError(msg){
   errBanner.style.display='block';
@@ -150,7 +139,6 @@ window.addEventListener('unhandledrejection', e=>{
   showError('UNHANDLED PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)));
 });
 
-// ---------- config ----------
 const WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
 
 const TIMEFRAMES = [
@@ -174,29 +162,25 @@ const TARGET_MARKETS = [
   {label:'Volatility 10 Index',  short:'V10',        patterns:['volatility 10'],  avoid:['1s']}
 ];
 
-// ---------- DOM refs ----------
 const liveDot=$('liveDot'), connLabel=$('connLabel'), symCount=$('symCount');
 const startBtn=$('startBtn');
-const emaPeriodInp=$('emaPeriodInp'), smaPeriodInp=$('smaPeriodInp');
-const buyLevelInp=$('buyLevelInp'), sellLevelInp=$('sellLevelInp');
+const swingLookInp=$('swingLookInp'), doubleTolInp=$('doubleTolInp'), retestWindowInp=$('retestWindowInp');
 const soundToggle=$('soundToggle');
 const liveMarketsBody=$('liveMarketsBody'), liveMarketsEmpty=$('liveMarketsEmpty');
 const liveMarketsToggle=$('liveMarketsToggle'), liveMarketsCaret=$('liveMarketsCaret');
 const logBody=$('logBody'), logEmpty=$('logEmpty');
 
-// ---------- state ----------
 let ws=null, reqCounter=1;
 const pending={};
 let soundOn=true;
-let trackers={};        // key "SYMBOL__granularity" -> tracker
-let subIdToKey={};      // subscription id -> key, for routing pushes reliably
+let trackers={};
+let subIdToKey={};
 let resolvedMarkets=[];
 let logEntries=[];
 let liveMarketsOpen=true;
 let renderPending=false;
 let manualDisconnect=false;
 
-// ---------- WS plumbing ----------
 function send(payload, timeoutMs=10000){
   return new Promise((resolve,reject)=>{
     if(!ws||ws.readyState!==1){reject(new Error('not connected'));return;}
@@ -214,20 +198,12 @@ function send(payload, timeoutMs=10000){
 
 function connect(){
   ws=new WebSocket(WS_URL);
-  ws.onopen=()=>{
-    liveDot.classList.add('live'); connLabel.textContent='Connected';
-    resolveMarkets();
-  };
+  ws.onopen=()=>{ liveDot.classList.add('live'); connLabel.textContent='Connected'; resolveMarkets(); };
   ws.onclose=()=>{
     liveDot.classList.remove('live'); connLabel.textContent='Disconnected';
-    if(!manualDisconnect){
-      setTimeout(()=>{ connLabel.textContent='Reconnecting…'; connect(); }, 3000);
-    }
+    if(!manualDisconnect){ setTimeout(()=>{ connLabel.textContent='Reconnecting…'; connect(); }, 3000); }
   };
-  ws.onerror=()=>{
-    connLabel.textContent='Connection error';
-    showError('WebSocket connection error — check your internet connection or try reloading.');
-  };
+  ws.onerror=()=>{ connLabel.textContent='Connection error'; showError('WebSocket connection error — check your internet connection or try reloading.'); };
   ws.onmessage=(msg)=>{
     let data; try{data=JSON.parse(msg.data);}catch(e){return;}
     if(data.req_id && pending[data.req_id]){
@@ -254,17 +230,11 @@ async function resolveMarkets(){
     });
     resolvedMarkets = TARGET_MARKETS.map(target=>{
       const avoid = target.avoid||[];
-      let match = null;
+      let match=null;
       if(target.patterns){
-        match = normalized.find(s=>
-          target.patterns.every(p=>s.nameLower.includes(p)) &&
-          !avoid.some(a=>s.nameLower.includes(a))
-        );
+        match = normalized.find(s=> target.patterns.every(p=>s.nameLower.includes(p)) && !avoid.some(a=>s.nameLower.includes(a)));
       } else if(target.anyOf){
-        for(const phrase of target.anyOf){
-          match = normalized.find(s=>s.nameLower.includes(phrase));
-          if(match) break;
-        }
+        for(const phrase of target.anyOf){ match = normalized.find(s=>s.nameLower.includes(phrase)); if(match) break; }
       }
       return {label:target.label, short:target.short, symbol: match?match.symbol:null, found:!!match};
     });
@@ -277,52 +247,248 @@ async function resolveMarkets(){
   }
 }
 
-// ---------- EMA / SMA on raw price ----------
-function calcSMA(arr,n){
-  if(arr.length<n) return null;
-  let sum=0; for(let i=arr.length-n;i<arr.length;i++) sum+=arr[i];
-  return sum/n;
-}
-function calcEMA(arr,n){
-  if(arr.length<n) return null;
-  const k=2/(n+1);
-  let ema=arr[arr.length-n];
-  for(let i=arr.length-n+1;i<arr.length;i++) ema = arr[i]*k + ema*(1-k);
-  return ema;
-}
-function normalizedPosition(value, recentCloses, buyLevel, sellLevel){
-  const recent = recentCloses.slice(-50);
-  const min = Math.min(...recent), max = Math.max(...recent);
-  if(max===min) return {raw:(buyLevel+sellLevel)/2};
-  const span = sellLevel-buyLevel;
-  const raw = ((value-min)/(max-min))*span + buyLevel;
-  return {raw};
+// =========================================================================
+// PATTERN DETECTION ENGINE
+// =========================================================================
+
+function pctDiff(a,b){ return Math.abs(a-b)/((a+b)/2)*100; }
+
+function newTrackerState(){
+  return {
+    candles: [],           // confirmed OHLC only: {o,h,l,c,epoch}
+    swings: [],            // confirmed swing points: {type:'high'|'low', idx, price}
+    trend: null,           // 'bullish' | 'bearish' | null
+    lastBrokenHigh: null,  // price of last swing high already used for a BOS/CHoCH
+    lastBrokenLow: null,
+    zones: [],             // pending OB/FVG zones awaiting retest: {kind,dir,top,bottom,formedIdx}
+    srBreak: null,         // pending classic S/R breakout awaiting retest: {dir,level,brokenIdx}
+    recentLows: [],        // last few confirmed swing lows, for double-bottom check
+    recentHighs: [],       // last few confirmed swing highs, for double-top check
+    doneDoubleBottom: false, doneDoubleTop: false
+  };
 }
 
-// ---------- seeding + live updates ----------
+function checkSwings(t, patState){
+  const N = parseInt(swingLookInp.value)||2;
+  const c = t.candles;
+  const n = c.length;
+  const idx = n-1-N; // candle to test, N bars back from the newest so it has N confirming bars after it
+  if(idx - N < 0) return;
+  let isHigh=true, isLow=true;
+  for(let k=1;k<=N;k++){
+    if(!(c[idx].h > c[idx-k].h && c[idx].h > c[idx+k].h)) isHigh=false;
+    if(!(c[idx].l < c[idx-k].l && c[idx].l < c[idx+k].l)) isLow=false;
+  }
+  if(isHigh) registerSwing(t, patState, 'high', idx, c[idx].h);
+  if(isLow) registerSwing(t, patState, 'low', idx, c[idx].l);
+}
+
+function registerSwing(t, patState, type, idx, price){
+  patState.swings.push({type, idx, price});
+  if(patState.swings.length>60) patState.swings.shift();
+  if(type==='high'){
+    patState.recentHighs.push({idx,price});
+    if(patState.recentHighs.length>4) patState.recentHighs.shift();
+  } else {
+    patState.recentLows.push({idx,price});
+    if(patState.recentLows.length>4) patState.recentLows.shift();
+  }
+}
+
+function lastSwing(patState, type){
+  for(let i=patState.swings.length-1;i>=0;i--) if(patState.swings[i].type===type) return patState.swings[i];
+  return null;
+}
+
+function checkBOSandCHoCH(t, patState, displayName, tfLabel){
+  const c = t.candles;
+  const last = c[c.length-1];
+  const sh = lastSwing(patState,'high'), sl = lastSwing(patState,'low');
+
+  if(sh && last.c > sh.price && patState.lastBrokenHigh !== sh.price){
+    patState.lastBrokenHigh = sh.price;
+    const wasBearish = patState.trend==='bearish';
+    patState.trend = 'bullish';
+    logSignal(displayName, tfLabel, wasBearish?'CHoCH':'BOS', 'BUY');
+    formOrderBlock(t, patState, 'bullish', sh.idx);
+  }
+  if(sl && last.c < sl.price && patState.lastBrokenLow !== sl.price){
+    patState.lastBrokenLow = sl.price;
+    const wasBullish = patState.trend==='bullish';
+    patState.trend = 'bearish';
+    logSignal(displayName, tfLabel, wasBullish?'CHoCH':'BOS', 'SELL');
+    formOrderBlock(t, patState, 'bearish', sl.idx);
+  }
+}
+
+// Order Block = the last opposite-colour candle before the impulsive move that caused the BOS
+function formOrderBlock(t, patState, dir, breakIdx){
+  const c = t.candles;
+  const upTo = c.length-1;
+  for(let i=upTo; i>=Math.max(0,upTo-15); i--){
+    const cand = c[i];
+    const bearish = cand.c < cand.o, bullish = cand.c > cand.o;
+    if(dir==='bullish' && bearish){
+      patState.zones.push({kind:'OB', dir, top:cand.h, bottom:cand.l, formedIdx:c.length-1});
+      break;
+    }
+    if(dir==='bearish' && bullish){
+      patState.zones.push({kind:'OB', dir, top:cand.h, bottom:cand.l, formedIdx:c.length-1});
+      break;
+    }
+  }
+}
+
+// FVG: 3-candle gap. Bullish: candle[i-2].h < candle[i].l. Bearish: candle[i-2].l > candle[i].h
+function checkFVG(t, patState){
+  const c = t.candles;
+  const n = c.length;
+  if(n<3) return;
+  const a=c[n-3], m=c[n-2], b=c[n-1];
+  if(a.h < b.l){
+    patState.zones.push({kind:'FVG', dir:'bullish', top:b.l, bottom:a.h, formedIdx:n-1});
+  }
+  if(a.l > b.h){
+    patState.zones.push({kind:'FVG', dir:'bearish', top:a.l, bottom:b.h, formedIdx:n-1});
+  }
+}
+
+// Retest: does the newest candle's range overlap a pending zone, closing back in the zone's direction?
+function checkZoneRetests(t, patState, displayName, tfLabel){
+  const c = t.candles;
+  const last = c[c.length-1];
+  const retestWindow = parseInt(retestWindowInp.value)||20;
+  patState.zones = patState.zones.filter(z=>{
+    if(c.length-1 - z.formedIdx > retestWindow) return false; // expire stale zones
+    const overlaps = last.l <= z.top && last.h >= z.bottom;
+    if(!overlaps) return true;
+    if(z.dir==='bullish' && last.c > last.o){
+      logSignal(displayName, tfLabel, z.kind+' Retest', 'BUY');
+      return false;
+    }
+    if(z.dir==='bearish' && last.c < last.o){
+      logSignal(displayName, tfLabel, z.kind+' Retest', 'SELL');
+      return false;
+    }
+    return true;
+  });
+}
+
+// Liquidity sweep: wick pokes beyond a recent swing but the candle closes back inside — rejection
+function checkLiquiditySweep(t, patState, displayName, tfLabel){
+  const c = t.candles;
+  const last = c[c.length-1];
+  const sh = lastSwing(patState,'high'), sl = lastSwing(patState,'low');
+  if(sh && last.h > sh.price && last.c < sh.price){
+    logSignal(displayName, tfLabel, 'Liquidity Sweep', 'SELL');
+  }
+  if(sl && last.l < sl.price && last.c > sl.price){
+    logSignal(displayName, tfLabel, 'Liquidity Sweep', 'BUY');
+  }
+}
+
+// Classic support/resistance breakout + retest
+function checkSRBreakoutRetest(t, patState, displayName, tfLabel){
+  const c = t.candles;
+  const last = c[c.length-1];
+  const sh = lastSwing(patState,'high'), sl = lastSwing(patState,'low');
+
+  if(!patState.srBreak){
+    if(sh && last.c > sh.price){
+      patState.srBreak = {dir:'bullish', level:sh.price, brokenIdx:c.length-1};
+      logSignal(displayName, tfLabel, 'Breakout (Resistance)', 'BUY');
+    } else if(sl && last.c < sl.price){
+      patState.srBreak = {dir:'bearish', level:sl.price, brokenIdx:c.length-1};
+      logSignal(displayName, tfLabel, 'Breakout (Support)', 'SELL');
+    }
+  } else {
+    const age = c.length-1 - patState.srBreak.brokenIdx;
+    const tol = patState.srBreak.level * 0.0015;
+    const nearLevel = Math.abs(last.c - patState.srBreak.level) <= tol || (last.l<=patState.srBreak.level+tol && last.h>=patState.srBreak.level-tol);
+    if(age>0 && nearLevel){
+      if(patState.srBreak.dir==='bullish' && last.c > last.o){
+        logSignal(displayName, tfLabel, 'Retest (Support hold)', 'BUY');
+        patState.srBreak=null;
+      } else if(patState.srBreak.dir==='bearish' && last.c < last.o){
+        logSignal(displayName, tfLabel, 'Retest (Resistance hold)', 'SELL');
+        patState.srBreak=null;
+      }
+    }
+    if(age > (parseInt(retestWindowInp.value)||30)) patState.srBreak=null; // give up waiting
+  }
+}
+
+// Double bottom / double top
+function checkDoublePattern(t, patState, displayName, tfLabel){
+  const tol = parseFloat(doubleTolInp.value)||0.3;
+  const c = t.candles;
+  const last = c[c.length-1];
+
+  if(patState.recentLows.length>=2){
+    const [l1,l2] = patState.recentLows.slice(-2);
+    if(l2.idx>l1.idx && pctDiff(l1.price,l2.price)<=tol){
+      const between = patState.recentHighs.find(h=>h.idx>l1.idx && h.idx<l2.idx);
+      if(between && last.c > between.price){
+        logSignal(displayName, tfLabel, 'Double Bottom', 'BUY');
+        patState.recentLows = [];
+      }
+    }
+  }
+  if(patState.recentHighs.length>=2){
+    const [h1,h2] = patState.recentHighs.slice(-2);
+    if(h2.idx>h1.idx && pctDiff(h1.price,h2.price)<=tol){
+      const between = patState.recentLows.find(l=>l.idx>h1.idx && l.idx<h2.idx);
+      if(between && last.c < between.price){
+        logSignal(displayName, tfLabel, 'Double Top', 'SELL');
+        patState.recentHighs = [];
+      }
+    }
+  }
+}
+
+function evaluateAllPatterns(t, seedOnly){
+  const patState = t.pat;
+  checkSwings(t, patState);
+  if(seedOnly) return; // build up structure silently while seeding, don't fire on history replay
+  checkBOSandCHoCH(t, patState, t.displayName, t.tfLabel);
+  checkFVG(t, patState);
+  checkZoneRetests(t, patState, t.displayName, t.tfLabel);
+  checkLiquiditySweep(t, patState, t.displayName, t.tfLabel);
+  checkSRBreakoutRetest(t, patState, t.displayName, t.tfLabel);
+  checkDoublePattern(t, patState, t.displayName, t.tfLabel);
+}
+
+// =========================================================================
+// SEEDING / LIVE UPDATES
+// =========================================================================
+
 async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
   const key = symbol+'__'+granularity;
   try{
-    const resp = await send({ticks_history:symbol, style:"candles", granularity, count:100, end:"latest", subscribe:1});
+    const resp = await send({ticks_history:symbol, style:"candles", granularity, count:150, end:"latest", subscribe:1});
     const candles = resp.candles||[];
-    const emaPeriod = parseInt(emaPeriodInp.value)||9, smaPeriod = parseInt(smaPeriodInp.value)||20;
-    if(candles.length < Math.max(emaPeriod,smaPeriod)+3) return null;
+    if(candles.length<30) return null;
 
-    // last candle treated as still-forming (not yet closed) — no-repaint discipline
-    const confirmed = candles.slice(0,-1).map(c=>Number(c.close));
+    const confirmed = candles.slice(0,-1).map(c=>({o:Number(c.open),h:Number(c.high),l:Number(c.low),c:Number(c.close),epoch:Number(c.epoch)}));
     const last = candles[candles.length-1];
 
     const tracker = {
       symbol, displayName, granularity, tfLabel, key,
-      closesConfirmed: confirmed,
-      formingEpoch: Number(last.epoch), formingClose: Number(last.close),
+      candles: confirmed,
+      formingEpoch: Number(last.epoch),
+      forming: {o:Number(last.open),h:Number(last.high),l:Number(last.low),c:Number(last.close)},
       lastPrice: Number(last.close),
-      prevSign:null, emaVal:null, smaVal:null
+      pat: newTrackerState()
     };
     trackers[key]=tracker;
     if(resp.subscription && resp.subscription.id) subIdToKey[resp.subscription.id]=key;
 
-    evaluateSignal(tracker, true); // establish baseline sign, no firing
+    // build up swing/structure state from history silently (no signals fired on replay)
+    for(let i=5;i<tracker.candles.length;i++){
+      const slice = tracker.candles.slice(0,i+1);
+      const tmp = {candles:slice};
+      checkSwings(tmp, tracker.pat);
+    }
     return tracker;
   }catch(err){
     console.warn('Seed failed for', key, err);
@@ -332,42 +498,19 @@ async function seedAndSubscribe(symbol, granularity, tfLabel, displayName){
 
 function handleOhlcPush(t, ohlc){
   const incomingEpoch = Number(ohlc.open_time || ohlc.epoch);
-  const closeVal = Number(ohlc.close);
+  const bar = {o:Number(ohlc.open), h:Number(ohlc.high), l:Number(ohlc.low), c:Number(ohlc.close)};
   if(t.formingEpoch!=null && incomingEpoch > t.formingEpoch){
-    // previously-forming candle just closed — commit it, then evaluate (no-repaint)
-    t.closesConfirmed.push(t.formingClose);
-    if(t.closesConfirmed.length>250) t.closesConfirmed.shift();
+    t.candles.push({...t.forming, epoch:t.formingEpoch});
+    if(t.candles.length>300) t.candles.shift();
     t.formingEpoch = incomingEpoch;
-    t.formingClose = closeVal;
-    evaluateSignal(t, false);
+    t.forming = bar;
+    evaluateAllPatterns(t, false);
   } else {
     t.formingEpoch = incomingEpoch;
-    t.formingClose = closeVal;
+    t.forming = bar;
   }
-  t.lastPrice = closeVal;
+  t.lastPrice = bar.c;
   scheduleRender();
-}
-
-// Plain crossover signal: BUY when EMA crosses above SMA, SELL when it crosses below.
-// No zone/tier distinction — every confirmed crossover fires and always sounds the alarm.
-function evaluateSignal(t, seedOnly){
-  const emaPeriod = parseInt(emaPeriodInp.value)||9;
-  const smaPeriod = parseInt(smaPeriodInp.value)||20;
-  if(t.closesConfirmed.length < Math.max(emaPeriod,smaPeriod)) return;
-
-  const ema = calcEMA(t.closesConfirmed, emaPeriod);
-  const sma = calcSMA(t.closesConfirmed, smaPeriod);
-  if(ema==null||sma==null) return;
-  t.emaVal=ema; t.smaVal=sma;
-
-  const diff = ema-sma;
-  const sign = diff>0?1:(diff<0?-1:0);
-
-  if(!seedOnly && t.prevSign!=null && sign!==0 && t.prevSign!==0 && sign!==t.prevSign){
-    const type = sign>0 ? 'BUY' : 'SELL';
-    logSignal(t.displayName, t.tfLabel, type);
-  }
-  t.prevSign = sign;
 }
 
 async function startWatching(){
@@ -396,10 +539,7 @@ async function startWatching(){
       const tr = await seedAndSubscribe(m.symbol, tf.g, tf.label, m.short);
       if(!tr){
         failures++;
-        if(!firstFailureShown){
-          showError(`Failed to load ${m.short} (${tf.label}) — will keep trying the rest.`);
-          firstFailureShown = true;
-        }
+        if(!firstFailureShown){ showError(`Failed to load ${m.short} (${tf.label}) — will keep trying the rest.`); firstFailureShown=true; }
       }
       done++;
       symCount.textContent = `${done} / ${total} series ready` + (failures? ` (${failures} failed)`:'');
@@ -418,34 +558,35 @@ function alarm(){
     if(currentAlarmCtx){ try{currentAlarmCtx.close();}catch(e){} }
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
     currentAlarmCtx = ctx;
-    const gainNode = ctx.createGain(); gainNode.gain.value = 0.9; gainNode.connect(ctx.destination);
+    const gainNode = ctx.createGain(); gainNode.gain.value=0.9; gainNode.connect(ctx.destination);
     const duration=5, beepLen=0.35, gapLen=0.15, cycle=beepLen+gapLen;
-    const cycles = Math.floor(duration/cycle);
-    let t = ctx.currentTime;
+    const cycles=Math.floor(duration/cycle);
+    let t=ctx.currentTime;
     for(let i=0;i<cycles;i++){
-      const osc = ctx.createOscillator();
+      const osc=ctx.createOscillator();
       osc.type='square'; osc.frequency.value=(i%2===0)?1200:850;
       osc.connect(gainNode); osc.start(t); osc.stop(t+beepLen);
-      t += cycle;
+      t+=cycle;
     }
     setTimeout(()=>{ try{ctx.close();}catch(e){} }, duration*1000+500);
   }catch(e){}
 }
-function logSignal(displayName, tfLabel, type){
+function logSignal(displayName, tfLabel, pattern, type){
   const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  logEntries.unshift({time, displayName, tfLabel, type});
+  logEntries.unshift({time, displayName, tfLabel, pattern, type});
   if(logEntries.length>400) logEntries.pop();
   renderLog();
   alarm();
 }
 function renderLog(){
   logEmpty.style.display = logEntries.length ? 'none':'block';
-  logBody.innerHTML = logEntries.slice(0,120).map(e=>`
+  logBody.innerHTML = logEntries.slice(0,150).map(e=>`
     <tr><td>${e.time}</td><td>${e.displayName}</td><td>${e.tfLabel}</td>
+    <td><span class="pat">${e.pattern}</span></td>
     <td class="${e.type==='BUY'?'buy':'sell'}">${e.type}</td></tr>`).join('');
 }
 
-// ---------- render (throttled) ----------
+// ---------- render ----------
 function scheduleRender(){
   if(renderPending) return;
   renderPending = true;
@@ -453,8 +594,6 @@ function scheduleRender(){
 }
 function renderAll(){
   if(!liveMarketsOpen) return;
-  const buyLevel = parseFloat(buyLevelInp.value)||12;
-  const sellLevel = parseFloat(sellLevelInp.value)||88;
   const byMarket = {};
   Object.values(trackers).forEach(t=>{
     if(!byMarket[t.displayName]) byMarket[t.displayName]=[];
@@ -465,21 +604,20 @@ function renderAll(){
   liveMarketsBody.innerHTML = names.map(name=>{
     const rows = byMarket[name].slice().sort((a,b)=>a.granularity-b.granularity);
     const rowsHtml = rows.map(t=>{
-      if(t.emaVal==null) return `<tr><td>${t.tfLabel}</td><td colspan="4" style="color:var(--sub);">seeding…</td></tr>`;
-      const pos = normalizedPosition(t.emaVal, t.closesConfirmed, buyLevel, sellLevel).raw;
-      const posCls = pos<buyLevel? 'pos-buy' : (pos>sellLevel? 'pos-sell':'pos-mid');
+      const trend = t.pat.trend;
+      const trendCls = trend==='bullish'?'trend-b':(trend==='bearish'?'trend-s':'trend-n');
+      const trendTxt = trend==='bullish'?'Bullish':(trend==='bearish'?'Bearish':'—');
       return `<tr>
         <td>${t.tfLabel}</td>
         <td>${t.lastPrice.toFixed(2)}</td>
-        <td style="color:#00aaff;">${t.emaVal.toFixed(2)}</td>
-        <td style="color:#fb923c;">${t.smaVal.toFixed(2)}</td>
-        <td class="${posCls}">${pos.toFixed(0)}</td>
+        <td class="${trendCls}">${trendTxt}</td>
+        <td>${t.pat.zones.length} zone(s)</td>
       </tr>`;
     }).join('');
     return `<div class="mkt-card">
       <div class="mkt-name">${name}</div>
       <table class="tf-table">
-        <thead><tr><th>TF</th><th>Price</th><th>EMA</th><th>SMA</th><th>Pos</th></tr></thead>
+        <thead><tr><th>TF</th><th>Price</th><th>Trend</th><th>Active</th></tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
     </div>`;
@@ -488,9 +626,7 @@ function renderAll(){
 
 // ---------- wiring ----------
 startBtn.addEventListener('click', startWatching);
-soundToggle.addEventListener('click', ()=>{
-  soundOn=!soundOn; soundToggle.classList.toggle('active', soundOn);
-});
+soundToggle.addEventListener('click', ()=>{ soundOn=!soundOn; soundToggle.classList.toggle('active', soundOn); });
 liveMarketsToggle.addEventListener('click', ()=>{
   liveMarketsOpen = !liveMarketsOpen;
   liveMarketsBody.style.display = liveMarketsOpen ? 'block':'none';
@@ -501,17 +637,15 @@ liveMarketsToggle.addEventListener('click', ()=>{
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible'){
     if(!ws || ws.readyState===WebSocket.CLOSED || ws.readyState===WebSocket.CLOSING){
-      connLabel.textContent = 'Reconnecting…';
-      connect();
+      connLabel.textContent='Reconnecting…'; connect();
     }
   }
 });
-
 setTimeout(()=>{
   if(!ws || ws.readyState!==1){
-    showError('Still not connected after 8 seconds. This usually means either your network is blocking WebSocket connections, or Deriv is unreachable right now. Try reloading, or try a different network (wifi vs mobile data).');
+    showError('Still not connected after 8 seconds. Try reloading, or try a different network.');
   } else if(Object.keys(trackers).length===0){
-    showError('Connected, but no markets have loaded yet after 8 seconds — this may just mean seeding is still in progress, or the symbol list fetch failed silently.');
+    showError('Connected, but no markets have loaded yet after 8 seconds — seeding may still be in progress.');
   }
 }, 8000);
 
