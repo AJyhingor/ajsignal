@@ -16,9 +16,6 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
   body{min-height:100vh;padding:14px;}
   .wrap{max-width:1100px;margin:0 auto;}
-  #errBanner{display:none;background:#3a0f0f;border:1px solid var(--red);color:#fecaca;
-    border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-family:var(--mono);
-    white-space:pre-wrap;word-break:break-word;}
   header{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     background:linear-gradient(180deg,#0d1420,#0a0e14);border:1px solid var(--line);
@@ -79,14 +76,12 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="errBanner"></div>
-
   <header>
     <div class="brand">
       <div class="dot" id="liveDot"></div>
-      <div><h1>AJ-SIGNAL</h1><span class="sub">Smart Money Pattern Scanner · 13 markets × 5 timeframes</span></div>
+      <div><h1>AJ-SIGNAL</h1><span class="sub">Smart Money Pattern Scanner · 13 markets × 3 timeframes</span></div>
     </div>
-    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 65 series ready</span></div>
+    <div class="conn"><b id="connLabel">Connecting…</b><span id="symCount">0 / 39 series ready</span></div>
   </header>
 
   <div class="grid">
@@ -100,7 +95,7 @@
         <div class="sw active" id="soundToggle"></div>
       </div>
       <div class="row" style="margin-top:10px;">
-        <button class="btn" id="startBtn">▶ Start / Restart Watching (all 65)</button>
+        <button class="btn" id="startBtn">▶ Start / Restart Watching (all 39)</button>
       </div>
     </div>
 
@@ -115,7 +110,7 @@
   </div>
 
   <div class="panel">
-    <h2 class="clickable" id="liveMarketsToggle">Live Markets (5 timeframes each) <span class="caret" id="liveMarketsCaret">▽</span></h2>
+    <h2 class="clickable" id="liveMarketsToggle">Live Markets (3 timeframes each) <span class="caret" id="liveMarketsCaret">▽</span></h2>
     <div id="liveMarketsBody"><div class="empty" id="liveMarketsEmpty">Resolving symbols…</div></div>
   </div>
 
@@ -127,23 +122,18 @@
 "use strict";
 const $=id=>document.getElementById(id);
 
-const errBanner = $('errBanner');
-function showError(msg){
-  errBanner.style.display='block';
-  errBanner.textContent = (errBanner.textContent ? errBanner.textContent+'\n\n':'') + msg;
-}
+function showError(msg){ console.error(msg); }
 window.addEventListener('error', e=>{
-  showError('JS ERROR: ' + e.message + (e.filename? ' ('+e.filename+':'+e.lineno+')':''));
+  console.error('JS ERROR:', e.message, e.filename? '('+e.filename+':'+e.lineno+')':'');
 });
 window.addEventListener('unhandledrejection', e=>{
-  showError('UNHANDLED PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)));
+  console.error('UNHANDLED PROMISE ERROR:', e.reason && e.reason.message ? e.reason.message : e.reason);
 });
 
 const WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
 
 const TIMEFRAMES = [
-  {g:3600,label:'1H'},{g:14400,label:'4H'},{g:21600,label:'6H'},
-  {g:43200,label:'12H'},{g:86400,label:'D1'}
+  {g:3600,label:'1H'},{g:14400,label:'4H'},{g:86400,label:'D1'}
 ];
 
 const TARGET_MARKETS = [
@@ -357,9 +347,11 @@ function checkFVG(t, patState){
 function checkZoneRetests(t, patState, displayName, tfLabel){
   const c = t.candles;
   const last = c[c.length-1];
+  const lastIdx = c.length-1;
   const retestWindow = parseInt(retestWindowInp.value)||20;
   patState.zones = patState.zones.filter(z=>{
-    if(c.length-1 - z.formedIdx > retestWindow) return false; // expire stale zones
+    if(lastIdx - z.formedIdx > retestWindow) return false; // expire stale zones
+    if(z.formedIdx >= lastIdx) return true; // zone must be at least 1 bar old before it can be "retested"
     const overlaps = last.l <= z.top && last.h >= z.bottom;
     if(!overlaps) return true;
     if(z.dir==='bullish' && last.c > last.o){
@@ -547,15 +539,22 @@ async function startWatching(){
     }
   }
   scheduleRender();
-  startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 65)';
+  startBtn.disabled=false; startBtn.textContent='▶ Start / Restart Watching (all 39)';
 }
 
 // ---------- alerts ----------
 let currentAlarmCtx=null;
+function safeCloseCtx(ctx){
+  if(!ctx || ctx.state==='closed') return;
+  try{
+    const p = ctx.close();
+    if(p && typeof p.catch==='function') p.catch(()=>{});
+  }catch(e){}
+}
 function alarm(){
   if(!soundOn) return;
   try{
-    if(currentAlarmCtx){ try{currentAlarmCtx.close();}catch(e){} }
+    safeCloseCtx(currentAlarmCtx);
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
     currentAlarmCtx = ctx;
     const gainNode = ctx.createGain(); gainNode.gain.value=0.9; gainNode.connect(ctx.destination);
@@ -568,7 +567,7 @@ function alarm(){
       osc.connect(gainNode); osc.start(t); osc.stop(t+beepLen);
       t+=cycle;
     }
-    setTimeout(()=>{ try{ctx.close();}catch(e){} }, duration*1000+500);
+    setTimeout(()=>{ if(currentAlarmCtx===ctx) currentAlarmCtx=null; safeCloseCtx(ctx); }, duration*1000+500);
   }catch(e){}
 }
 function logSignal(displayName, tfLabel, pattern, type){
