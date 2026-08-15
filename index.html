@@ -1010,60 +1010,6 @@ button,select,input{
 
         <div class="chartPanel">
 
-            <div class="chartTop">
-
-                <div class="chartControl">
-
-                    <label>Market</label>
-
-                    <select id="chartMarket">
-
-                        <option value="R_25" selected>R_25</option>
-                        <option value="R_50">R_50</option>
-                        <option value="R_75">R_75</option>
-                        <option value="R_100">R_100</option>
-
-                    </select>
-
-                </div>
-
-                <div class="chartControl">
-
-                    <label>Time</label>
-
-                    <select id="chartTime2">
-
-                        <option value="1t">1T</option>
-                        <option value="5t">5T</option>
-                        <option value="1m" selected>1M</option>
-                        <option value="5m">5M</option>
-                        <option value="15m">15M</option>
-
-                    </select>
-
-                </div>
-
-                <div class="chartControl">
-
-                    <label>View</label>
-
-                    <select id="chartStyle2">
-
-                        <option value="candles" selected>
-                            Candles
-                        </option>
-
-                        <option value="line">
-                            Line
-                        </option>
-
-                    </select>
-
-                </div>
-
-            </div>
-
-
             <div id="chartViewport"
                  class="chartViewport">
 
@@ -4917,10 +4863,6 @@ function changeMarket(symbol){
         .value =
         symbol;
 
-    $("chartMarket")
-        .value =
-        symbol;
-
     tickHistory=[];
     chartBars=[];
     currentTick=null;
@@ -4964,10 +4906,6 @@ function changeChartTime(mode){
         .value =
         mode;
 
-    $("chartTime2")
-        .value =
-        mode;
-
     panOffset=0;
 
     updateChartFromTicks();
@@ -4984,19 +4922,7 @@ $("marketSelect").onchange =
             e.target.value
         );
 
-$("chartMarket").onchange =
-    e =>
-        changeMarket(
-            e.target.value
-        );
-
 $("chartTime").onchange =
-    e =>
-        changeChartTime(
-            e.target.value
-        );
-
-$("chartTime2").onchange =
     e =>
         changeChartTime(
             e.target.value
@@ -5006,23 +4932,6 @@ $("chartStyle").onchange =
     e=>{
 
         currentChartStyle =
-            e.target.value;
-
-        $("chartStyle2")
-            .value =
-            e.target.value;
-
-        drawChart();
-    };
-
-$("chartStyle2").onchange =
-    e=>{
-
-        currentChartStyle =
-            e.target.value;
-
-        $("chartStyle")
-            .value =
             e.target.value;
 
         drawChart();
