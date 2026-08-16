@@ -241,7 +241,7 @@ button,select,input{
 .chartViewport{
     position:relative;
     width:100%;
-    height:760px;
+    height:440px;
     background:#071321;
     overflow:hidden;
     touch-action:none;
@@ -449,7 +449,7 @@ button,select,input{
 
 #indicatorCanvas{
     width:100%;
-    height:210px;
+    height:140px;
     display:block;
 }
 
@@ -465,12 +465,12 @@ button,select,input{
 }
 
 .tradeBtn{
-    height:100px;
+    height:72px;
     border:0;
     border-radius:12px;
     color:#fff;
     font-weight:900;
-    font-size:24px;
+    font-size:19px;
     cursor:pointer;
     box-shadow:inset 0 -3px 0 rgba(0,0,0,.22);
     touch-action:manipulation;
@@ -689,7 +689,7 @@ button,select,input{
     }
 
     .chartViewport{
-        height:720px;
+        height:420px;
     }
 }
 
@@ -705,19 +705,19 @@ button,select,input{
     }
 
     .logo{
-        font-size:22px;
+        font-size:19px;
     }
 
     .headerLabel{
-        font-size:10px;
+        font-size:9px;
     }
 
     .headerValue{
-        font-size:15px;
+        font-size:13px;
     }
 
     #livePrice{
-        font-size:19px;
+        font-size:17px;
     }
 
     .connection{
@@ -728,34 +728,34 @@ button,select,input{
         width:auto;
         max-width:none;
         flex:1;
-        height:46px;
-        font-size:14px;
+        height:40px;
+        font-size:13px;
     }
 
     .connectBtn{
-        width:96px;
-        height:46px;
-        font-size:13px;
+        width:88px;
+        height:40px;
+        font-size:12px;
     }
 
     .controlGrid{
         grid-template-columns:1fr 1fr 1fr 1fr;
-        gap:6px;
+        gap:5px;
     }
 
     .control{
-        min-height:70px;
-        padding:6px;
+        min-height:60px;
+        padding:5px;
     }
 
     .controlTitle{
-        font-size:9px;
+        font-size:8px;
     }
 
     .controlValue,
     .accountSwitch button{
-        height:40px;
-        font-size:12px;
+        height:34px;
+        font-size:11px;
     }
 
     .mainRow{
@@ -767,12 +767,12 @@ button,select,input{
     }
 
     .chartViewport{
-        height:680px;
+        height:400px;
     }
 
     .tradeBtn{
-        height:92px;
-        font-size:21px;
+        height:66px;
+        font-size:17px;
     }
 
     .bottomRow{
@@ -785,38 +785,38 @@ button,select,input{
     }
 
     .bottomLabel{
-        font-size:9px;
+        font-size:8px;
     }
 
     .stakeInput,
     .bottomSelect,
     .indicatorButton,
     .logButton{
-        height:40px;
-        font-size:12px;
+        height:34px;
+        font-size:11px;
     }
 
     #indicatorCanvas{
-        height:195px;
+        height:130px;
     }
 }
 
 @media(max-width:450px){
 
     .logo{
-        font-size:19px;
-    }
-
-    .headerValue{
-        font-size:13px;
-    }
-
-    #livePrice{
         font-size:17px;
     }
 
+    .headerValue{
+        font-size:12px;
+    }
+
+    #livePrice{
+        font-size:15px;
+    }
+
     .controlTitle{
-        font-size:9px;
+        font-size:8px;
     }
 
     .chartTop{
@@ -825,22 +825,22 @@ button,select,input{
     }
 
     .chartControl select{
-        height:38px;
-        font-size:12px;
+        height:34px;
+        font-size:11px;
     }
 
     .chartViewport{
-        height:640px;
+        height:370px;
     }
 
     .positionRow{
-        font-size:11px;
-        min-height:42px;
+        font-size:10px;
+        min-height:36px;
     }
 
     .tradeBtn{
-        height:86px;
-        font-size:19px;
+        height:62px;
+        font-size:16px;
     }
 
     .bottomRow{
@@ -2035,6 +2035,38 @@ function getVisibleRange(totalBars){
 
 
 /* =========================================================
+   PLOT GEOMETRY (shared by main chart + indicator window
+   so the horizontal x-position of a given bar index lines
+   up exactly between the two canvases, and so the newest
+   candle always sits at least one grid column in from the
+   right edge instead of touching it)
+========================================================= */
+
+function getPlotGeometry(W){
+
+    const left = 4;
+
+    const priceLabelReserve = 48;
+
+    const gridGap =
+        W/8;
+
+    const plotW =
+        Math.max(
+            40,
+            W-
+            priceLabelReserve-
+            gridGap
+        );
+
+    return {
+        left,
+        plotW
+    };
+}
+
+
+/* =========================================================
    CHART UPDATE
 ========================================================= */
 
@@ -2218,8 +2250,10 @@ function drawChart(){
         );
     }
 
-    const plotW =
-        W-48;
+    const {
+        left,
+        plotW
+    } = getPlotGeometry(W);
 
     if(currentChartStyle === "line"){
 
@@ -2229,7 +2263,7 @@ function drawChart(){
             (bar,i)=>{
 
                 const x =
-                    4+
+                    left+
                     i*
                     (
                         plotW/
@@ -2273,7 +2307,7 @@ function drawChart(){
             (bar,i)=>{
 
                 const x =
-                    4+
+                    left+
                     i*spacing+
                     spacing/2;
 
@@ -2352,6 +2386,7 @@ function drawChart(){
             values,
             view,
             priceY,
+            left,
             plotW
         );
     }
@@ -2778,6 +2813,7 @@ function drawMainMA(
     values,
     bars,
     priceY,
+    left,
     plotW
 ){
 
@@ -2795,7 +2831,7 @@ function drawMainMA(
                 return;
 
             const x =
-                4+
+                left+
                 i*spacing+
                 spacing/2;
 
@@ -3250,8 +3286,13 @@ function drawMACD(
 
     ictx.stroke();
 
+    const {
+        left:histLeft,
+        plotW:histPlotW
+    } = getPlotGeometry(W);
+
     const spacing =
-        W/
+        histPlotW/
         result.histogram.length;
 
     result.histogram.forEach(
@@ -3261,6 +3302,7 @@ function drawMACD(
                 return;
 
             const x =
+                histLeft+
                 i*spacing+
                 spacing/2;
 
@@ -3404,12 +3446,20 @@ function drawIndicatorLine(
     if(!values.length)
         return;
 
+    /* Same left margin + plot width as the main chart, and
+       the same "bar-center" x formula used for candles, so
+       the last (current) indicator value sits directly
+       under the current candle - not stretched to the
+       canvas edge. */
+
+    const {
+        left,
+        plotW
+    } = getPlotGeometry(W);
+
     const spacing =
-        W/
-        Math.max(
-            1,
-            values.length-1
-        );
+        plotW/
+        values.length;
 
     ictx.beginPath();
 
@@ -3426,7 +3476,9 @@ function drawIndicatorLine(
             }
 
             const x =
-                i*spacing;
+                left+
+                i*spacing+
+                spacing/2;
 
             const yy =
                 y(value);
@@ -4328,10 +4380,13 @@ function handleAuthenticatedMessage(data){
 
 /* =========================================================
    TRADE BUTTONS
-   Fires on pointerdown (the instant the finger touches the
-   screen) instead of waiting for the click event, so entry
-   feels instant. A short lock per button blocks accidental
-   double-taps while an order is in flight.
+   Both "pointerdown" (fires the instant a finger/mouse
+   touches the button, for the fastest possible feel) and
+   "click" (the universally-supported fallback that always
+   works, even on devices/browsers with partial or no
+   Pointer Events support) are wired up. A short time-based
+   debounce - not an event-type check - stops the pair from
+   ever placing the same order twice.
 ========================================================= */
 
 let tradeLock = {
@@ -4339,43 +4394,55 @@ let tradeLock = {
     FALL:false
 };
 
+let lastTradeFire = {
+    RISE:0,
+    FALL:0
+};
+
 function fireTrade(direction,event){
 
-    if(event){
+    if(event && event.cancelable){
         event.preventDefault();
     }
+
+    const now =
+        Date.now();
+
+    if(
+        now-lastTradeFire[direction] <
+        600
+    ){
+        /* Same tap already fired this order via the other
+           event type a moment ago - ignore the duplicate. */
+        return;
+    }
+
+    lastTradeFire[direction] =
+        now;
 
     placeTrade(direction);
 }
 
-$("riseBtn").addEventListener(
-    "pointerdown",
-    e=>fireTrade("RISE",e)
-);
+["riseBtn","fallBtn"].forEach(
+    id=>{
 
-$("fallBtn").addEventListener(
-    "pointerdown",
-    e=>fireTrade("FALL",e)
-);
+        const direction =
+            id === "riseBtn"
+            ? "RISE"
+            : "FALL";
 
-/* Fallback for environments without pointer events
-   (keyboard activation, assistive tech, etc). Guarded so
-   it never double-fires after a pointerdown already sent
-   the same order. */
+        const btn =
+            $(id);
 
-$("riseBtn").addEventListener(
-    "click",
-    e=>{
-        if(e.detail===0)
-            fireTrade("RISE",e);
-    }
-);
+        btn.addEventListener(
+            "pointerdown",
+            e=>fireTrade(direction,e)
+        );
 
-$("fallBtn").addEventListener(
-    "click",
-    e=>{
-        if(e.detail===0)
-            fireTrade("FALL",e);
+        btn.addEventListener(
+            "click",
+            e=>fireTrade(direction,e)
+        );
     }
 );
 
