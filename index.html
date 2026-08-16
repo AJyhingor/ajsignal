@@ -196,10 +196,26 @@ button,select,input{
    ========================================================= */
 
 .mainRow{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) 280px;
-    gap:6px;
+    display:block;
     margin-bottom:6px;
+}
+
+/* Side-by-side chart + positions only kicks in on genuinely
+   wide screens (tablet/desktop). Phones always get the
+   full-width stacked layout below - no breakpoint guessing,
+   so the chart never gets squeezed into half the screen. */
+
+@media(min-width:900px){
+
+    .mainRow{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) 300px;
+        gap:8px;
+    }
+
+    .positionPanel{
+        margin-top:0 !important;
+    }
 }
 
 .chartPanel{
@@ -241,7 +257,7 @@ button,select,input{
 .chartViewport{
     position:relative;
     width:100%;
-    height:440px;
+    height:clamp(240px,44vh,460px);
     background:#071321;
     overflow:hidden;
     touch-action:none;
@@ -449,7 +465,7 @@ button,select,input{
 
 #indicatorCanvas{
     width:100%;
-    height:140px;
+    height:clamp(90px,16vh,170px);
     display:block;
 }
 
@@ -465,12 +481,12 @@ button,select,input{
 }
 
 .tradeBtn{
-    height:72px;
+    height:clamp(52px,9vh,80px);
     border:0;
     border-radius:12px;
     color:#fff;
     font-weight:900;
-    font-size:19px;
+    font-size:clamp(15px,3.4vh,20px);
     cursor:pointer;
     box-shadow:inset 0 -3px 0 rgba(0,0,0,.22);
     touch-action:manipulation;
@@ -683,14 +699,6 @@ button,select,input{
     .header{
         grid-template-columns:1.4fr 1fr 1fr 1.2fr;
     }
-
-    .mainRow{
-        grid-template-columns:1fr 230px;
-    }
-
-    .chartViewport{
-        height:420px;
-    }
 }
 
 @media(max-width:700px){
@@ -766,12 +774,7 @@ button,select,input{
         margin-top:6px;
     }
 
-    .chartViewport{
-        height:400px;
-    }
-
     .tradeBtn{
-        height:66px;
         font-size:17px;
     }
 
@@ -794,10 +797,6 @@ button,select,input{
     .logButton{
         height:34px;
         font-size:11px;
-    }
-
-    #indicatorCanvas{
-        height:130px;
     }
 }
 
@@ -829,18 +828,9 @@ button,select,input{
         font-size:11px;
     }
 
-    .chartViewport{
-        height:370px;
-    }
-
     .positionRow{
         font-size:10px;
         min-height:36px;
-    }
-
-    .tradeBtn{
-        height:62px;
-        font-size:16px;
     }
 
     .bottomRow{
