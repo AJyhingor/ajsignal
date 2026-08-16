@@ -58,7 +58,7 @@ button,select,input{
 }
 
 .logo{
-    font-size:26px;
+    font-size:18px;
     font-weight:900;
     color:#fff;
     white-space:nowrap;
@@ -70,14 +70,14 @@ button,select,input{
 }
 
 .headerLabel{
-    font-size:11px;
+    font-size:9px;
     color:#71859a;
     text-transform:uppercase;
 }
 
 .headerValue{
-    margin-top:3px;
-    font-size:18px;
+    margin-top:2px;
+    font-size:13px;
     font-weight:800;
     white-space:nowrap;
     overflow:hidden;
@@ -86,7 +86,7 @@ button,select,input{
 
 #livePrice{
     color:#48d8ff;
-    font-size:24px;
+    font-size:16px;
 }
 
 #balance{
@@ -94,7 +94,7 @@ button,select,input{
 }
 
 #digitalTime{
-    font-size:11px;
+    font-size:10px;
     font-weight:700;
     color:#c3d2e2;
 }
@@ -118,14 +118,14 @@ button,select,input{
 .patInput{
     width:235px;
     max-width:38%;
-    height:46px;
+    height:36px;
     border:1px solid #294967;
     background:#071321;
     color:#fff;
     border-radius:6px;
-    padding:0 12px;
+    padding:0 10px;
     outline:none;
-    font-size:14px;
+    font-size:12px;
 }
 
 .patInput:focus{
@@ -133,13 +133,13 @@ button,select,input{
 }
 
 .connectBtn{
-    height:46px;
-    width:110px;
+    height:36px;
+    width:92px;
     border:0;
     border-radius:6px;
     background:#1675d1;
     color:#fff;
-    font-size:13px;
+    font-size:11px;
     font-weight:900;
 }
 
@@ -163,29 +163,29 @@ button,select,input{
     background:#0d1a2b;
     border:1px solid #1c3855;
     border-radius:8px;
-    padding:6px;
-    min-height:72px;
+    padding:4px;
+    min-height:50px;
 }
 
 .controlTitle{
     text-align:center;
     color:#52b7ff;
-    font-size:10px;
+    font-size:8px;
     font-weight:900;
     text-transform:uppercase;
-    margin-bottom:5px;
+    margin-bottom:3px;
 }
 
 .controlValue{
     width:100%;
-    height:42px;
+    height:30px;
     border:1px solid #294967;
     border-radius:5px;
     background:#071321;
     color:#fff;
     text-align:center;
     font-weight:800;
-    font-size:14px;
+    font-size:11px;
     outline:none;
 }
 
@@ -196,12 +196,12 @@ button,select,input{
 
 .accountSwitch button{
     flex:1;
-    height:42px;
+    height:30px;
     border:1px solid #294967;
     border-radius:5px;
     background:#071321;
     color:#aebfd2;
-    font-size:13px;
+    font-size:11px;
     font-weight:900;
 }
 
@@ -404,11 +404,11 @@ button,select,input{
     border:0;
     background:#0d1a2b;
     color:#52b7ff;
-    padding:9px 10px;
+    padding:7px 9px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    font-size:12px;
+    font-size:11px;
     font-weight:900;
     text-transform:uppercase;
     flex-shrink:0;
@@ -598,7 +598,7 @@ button,select,input{
     background:#0d1a2b;
     border:1px solid #1c3855;
     border-radius:7px;
-    padding:6px;
+    padding:4px 3px;
     min-width:0;
 }
 
@@ -606,15 +606,18 @@ button,select,input{
     display:block;
     text-align:center;
     color:#7288a0;
-    font-size:10px;
+    font-size:8px;
     text-transform:uppercase;
-    margin-bottom:5px;
+    margin-bottom:3px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
 .stakeInput,
 .bottomSelect{
     width:100%;
-    height:44px;
+    height:32px;
     border:1px solid #294967;
     background:#071321;
     color:#fff;
@@ -622,19 +625,19 @@ button,select,input{
     text-align:center;
     font-weight:900;
     outline:none;
-    font-size:14px;
+    font-size:11px;
 }
 
 .indicatorButton,
 .logButton{
     width:100%;
-    height:44px;
+    height:32px;
     border:1px solid #294967;
     background:#071321;
     color:#fff;
     border-radius:5px;
     font-weight:900;
-    font-size:13px;
+    font-size:10px;
 }
 
 .indicatorMenu{
@@ -773,7 +776,7 @@ button,select,input{
 @media(max-width:700px){
 
     .app{
-        padding:5px;
+        padding:4px;
     }
 
     .header{
@@ -781,58 +784,14 @@ button,select,input{
         gap:4px;
     }
 
-    .logo{
-        font-size:19px;
-    }
-
-    .headerLabel{
-        font-size:9px;
-    }
-
-    .headerValue{
-        font-size:13px;
-    }
-
-    #livePrice{
-        font-size:17px;
-    }
-
     .connection{
-        padding:5px;
+        padding:4px;
     }
 
     .patInput{
         width:auto;
         max-width:none;
         flex:1;
-        height:40px;
-        font-size:13px;
-    }
-
-    .connectBtn{
-        width:88px;
-        height:40px;
-        font-size:12px;
-    }
-
-    .controlGrid{
-        grid-template-columns:1fr 1fr 1fr 1fr;
-        gap:5px;
-    }
-
-    .control{
-        min-height:60px;
-        padding:5px;
-    }
-
-    .controlTitle{
-        font-size:8px;
-    }
-
-    .controlValue,
-    .accountSwitch button{
-        height:34px;
-        font-size:11px;
     }
 
     .mainRow{
@@ -840,51 +799,26 @@ button,select,input{
     }
 
     .positionPanel{
-        margin-top:6px;
+        margin-top:5px;
     }
 
     .tradeBtn{
-        font-size:17px;
-    }
-
-    .bottomRow{
-        grid-template-columns:1fr 1fr 1fr 1fr;
-        gap:5px;
-    }
-
-    .bottomBox{
-        padding:5px 4px;
-    }
-
-    .bottomLabel{
-        font-size:8px;
-    }
-
-    .stakeInput,
-    .bottomSelect,
-    .indicatorButton,
-    .logButton{
-        height:34px;
-        font-size:11px;
+        font-size:16px;
     }
 }
 
 @media(max-width:450px){
 
     .logo{
-        font-size:17px;
+        font-size:16px;
     }
 
     .headerValue{
-        font-size:12px;
+        font-size:11px;
     }
 
     #livePrice{
-        font-size:15px;
-    }
-
-    .controlTitle{
-        font-size:8px;
+        font-size:14px;
     }
 
     .chartTop{
@@ -903,12 +837,24 @@ button,select,input{
     }
 
     .bottomRow{
-        grid-template-columns:1fr 1fr;
-        gap:5px;
+        gap:4px;
     }
 
     .bottomBox{
         min-height:auto;
+        padding:3px 2px;
+    }
+
+    .bottomLabel{
+        font-size:7px;
+    }
+
+    .stakeInput,
+    .bottomSelect,
+    .indicatorButton,
+    .logButton{
+        height:30px;
+        font-size:9px;
     }
 }
 </style>
@@ -5623,4 +5569,35 @@ async function connectToDeriv(isAutoRetry){
             selectedAccountType ===
             "demo"
             ? "DOT"
-            : "
+            : "CR";
+
+        let account =
+            accounts.find(
+                a=>
+                    String(
+                        a.account_id ||
+                        a.loginid ||
+                        ""
+                    ).startsWith(
+                        wantedPrefix
+                    )
+            );
+
+        if(!account){
+
+            account =
+                accounts.find(
+                    a=>
+                        String(
+                            a.account_type ||
+                            ""
+                        ).toLowerCase() ===
+                        selectedAccountType
+                );
+        }
+
+        if(!account){
+
+            throw new Error(
+                "No "+
+                selectedAccountT
