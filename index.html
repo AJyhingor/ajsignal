@@ -1,30 +1,206 @@
-// Pure JS RSI Calculation (Wilder's Smoothing)
-function calculateRSI(prices, period = 14) {
-    if (prices.length <= period) return [];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSI Trading Bot Interface</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --green: #22c55e;
+            --red: #ef4444;
+        }
 
-    let rsi = [];
-    let gains = [];
-    let losses = [];
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-    // Calculate initial gains and losses
-    for (let i = 1; i < prices.length; i++) {
-        let difference = prices[i] - prices[i - 1];
-        gains.push(difference > 0 ? difference : 0);
-        losses.push(difference < 0 ? Math.abs(difference) : 0);
-    }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
 
-    // Calculate first average gain and loss
-    let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: var(--accent-blue);
+            border-bottom: 1px solid #334155;
+            padding-bottom: 12px;
+        }
+
+        .data-box {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            border: 1px solid #334155;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .signal {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        .neutral { background: #475569; color: #fff; }
+        .buy { background: var(--green); color: #fff; }
+        .sell { background: var(--red); color: #fff; }
+
+        button {
+            width: 100%;
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .log {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #a7f3d0;
+            max-height: 150px;
+            overflow-y: auto;
+            background: #020617;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 RSI Bot Dashboard</h1>
     
-    rsi.push(100 - (100 / (1 + (avgGain / (avgLoss || 1)))));
+    <div class="data-box">
+        <div class="label">Current Price Simulation</div>
+        <div id="price-display" class="value">$100.00</div>
+    </div>
 
-    // Apply Wilder's smoothing technique for the remaining values
-    for (let i = period; i < gains.length; i++) {
-        avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
-        avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
-        rsi.push(100 - (100 / (1 + (avgGain / (avgLoss || 1)))));
+    <div class="data-box">
+        <div class="label">14-Period RSI Value</div>
+        <div id="rsi-display" class="value">--</div>
+        <div id="signal-badge" class="signal neutral">WAITING FOR DATA</div>
+    </div>
+
+    <button onclick="generateTick()">Simulate Market Tick</button>
+
+    <div class="label" style="margin-top: 20px;">System Activity Log</div>
+    <div id="log-box" class="log">Bot initialized. Click the button to feed mock data...</div>
+</div>
+
+<script>
+    // Keep a rolling history of simulated closing prices
+    // Starting with 14 background prices so RSI calculates immediately
+    let priceHistory =;
+
+    function calculateRSI(prices, period = 14) {
+        if (prices.length <= period) return 50; // Default middle value if data lacks
+
+        let gains = [];
+        let losses = [];
+
+        for (let i = 1; i < prices.length; i++) {
+            let diff = prices[i] - prices[i - 1];
+            gains.push(diff > 0 ? diff : 0);
+            losses.push(diff < 0 ? Math.abs(diff) : 0);
+        }
+
+        let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+        for (let i = period; i < gains.length; i++) {
+            avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+            avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+        }
+
+        if (avgLoss === 0) return 100;
+        let rs = avgGain / avgLoss;
+        return 100 - (100 / (1 + rs));
     }
 
-    return rsi;
-}
+    function generateTick() {
+        // Create a random price fluctuation
+        let lastPrice = priceHistory[priceHistory.length - 1];
+        let change = (Math.random() - 0.48) * 4; // Slight upward bias
+        let newPrice = parseFloat((lastPrice + change).toFixed(2));
+        
+        priceHistory.push(newPrice);
+        if(priceHistory.length > 50) priceHistory.shift(); // Keep array lightweight
+
+        // Calculate RSI
+        let rsi = calculateRSI(priceHistory).toFixed(2);
+
+        // Update HTML Interface
+        document.getElementById('price-display').innerText = `$${newPrice.toFixed(2)}`;
+        document.getElementById('rsi-display').innerText = rsi;
+
+        // Determine Trading Signals
+        let badge = document.getElementById('signal-badge');
+        let logBox = document.getElementById('log-box');
+        let statusText = "";
+
+        if (rsi >= 70) {
+            badge.className = "signal sell";
+            badge.innerText = "SELL SIGNAL (OVERBOUGHT)";
+            statusText = `[ALERT] RSI reached ${rsi}. Executing short/sell logic.`;
+        } else if (rsi <= 30) {
+            badge.className = "signal buy";
+            badge.innerText = "BUY SIGNAL (OVERSOLD)";
+            statusText = `[ALERT] RSI dropped to ${rsi}. Executing long/buy logic.`;
+        } else {
+            badge.className = "signal neutral";
+            badge.innerText = "NEUTRAL (HOLD)";
+            statusText = `[SCAN] Price changed to $${newPrice}. RSI stable at ${rsi}.`;
+        }
+
+        // Write log entry
+        logBox.innerHTML += `<div>${statusText}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Run first generation on startup
+    generateTick();
+</script>
+
+</body>
+</html>
