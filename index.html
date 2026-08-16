@@ -4119,6 +4119,11 @@ $("liveBtn").onclick =
 
 async function getAccounts(){
 
+    log(
+        "Requesting Deriv accounts...",
+        "info"
+    );
+
     const response =
         await fetch(
             API_BASE+
@@ -4134,14 +4139,37 @@ async function getAccounts(){
             }
         );
 
-    const json =
-        await response.json();
+    const rawText =
+        await response.text();
+
+    let json;
+
+    try{
+
+        json =
+            JSON.parse(rawText);
+
+    }catch{
+
+        throw new Error(
+            rawText ||
+            (
+                "HTTP "+
+                response.status
+            )
+        );
+    }
 
     if(!response.ok){
 
         throw new Error(
             json?.errors?.[0]?.message ||
-            "Unable to retrieve Deriv accounts."
+            json?.message ||
+            (
+                "HTTP "+
+                response.status+
+                ": Unable to retrieve Deriv accounts."
+            )
         );
     }
 
@@ -4164,6 +4192,14 @@ async function getAccounts(){
     }
 
     if(
+        json.data &&
+        typeof json.data ===
+        "object"
+    ){
+        return [json.data];
+    }
+
+    if(
         Array.isArray(
             json.accounts
         )
@@ -4172,7 +4208,7 @@ async function getAccounts(){
     }
 
     throw new Error(
-        "Deriv returned no Options accounts."
+        "Deriv returned no Options accounts for this PAT."
     );
 }
 
@@ -4182,6 +4218,13 @@ async function getAccounts(){
 ========================================================= */
 
 async function getOTP(account){
+
+    log(
+        "Requesting session for account "+
+        account+
+        "...",
+        "info"
+    );
 
     const response =
         await fetch(
@@ -4200,14 +4243,37 @@ async function getOTP(account){
             }
         );
 
-    const json =
-        await response.json();
+    const rawText =
+        await response.text();
+
+    let json;
+
+    try{
+
+        json =
+            JSON.parse(rawText);
+
+    }catch{
+
+        throw new Error(
+            rawText ||
+            (
+                "HTTP "+
+                response.status
+            )
+        );
+    }
 
     if(!response.ok){
 
         throw new Error(
             json?.errors?.[0]?.message ||
-            "Unable to obtain Deriv WebSocket OTP."
+            json?.message ||
+            (
+                "HTTP "+
+                response.status+
+                ": Unable to obtain Deriv WebSocket OTP."
+            )
         );
     }
 
@@ -5450,50 +5516,46 @@ async function connectToDeriv(isAutoRetry){
         const accounts =
             await getAccounts();
 
-        const wantedPrefix =
+        const wantedTypes =
             selectedAccountType ===
             "demo"
-            ? "DOT"
-            : "CR";
+            ? ["demo","virtual"]
+            : ["live","real","real-money"];
 
-        let account =
+        const account =
             accounts.find(
                 a=>
-                    String(
-                        a.account_id ||
-                        a.loginid ||
-                        ""
-                    ).startsWith(
-                        wantedPrefix
+                    wantedTypes.includes(
+                        String(
+                            a.account_type ||
+                            a.type ||
+                            a.accountType ||
+                            ""
+                        ).toLowerCase()
                     )
             );
 
         if(!account){
 
-            account =
-                accounts.find(
-                    a=>
-                        String(
-                            a.account_type ||
-                            ""
-                        ).toLowerCase() ===
-                        selectedAccountType
-                );
-        }
-
-        if(!account){
-
             throw new Error(
                 "No "+
-                selectedAccountType+
-                " account was found."
+                selectedAccountType.toUpperCase()+
+                " Options account found for this PAT."
             );
         }
 
         accountId =
             account.account_id ||
+            account.accountId ||
             account.loginid ||
             account.id;
+
+        if(!accountId){
+
+            throw new Error(
+                "Deriv account ID was not returned."
+            );
+        }
 
         accountCurrency =
             account.currency ||
@@ -5540,65 +5602,4 @@ async function connectToDeriv(isAutoRetry){
             (
                 isAutoRetry
                 ? "Reconnected - "
-                : ""
-            )+
-            selectedAccountType
-            .toUpperCase()+
-            " Deriv account connected.",
-            "good"
-        );
-
-        return true;
-
-    }catch(error){
-
-        log(
-            error.message ||
-            "Connection failed.",
-            "bad"
-        );
-
-        $("chartStatus")
-            .textContent =
-            isAutoRetry
-            ? "RECONNECT FAILED"
-            : "CONNECTION FAILED";
-
-        return false;
-
-    }finally{
-
-        if(!isAutoRetry){
-
-            $("connectBtn")
-                .disabled =
-                false;
-        }
-    }
-}
-
-
-$("connectBtn").onclick =
-    async ()=>{
-
-        if(connected){
-
-            shouldStayConnected=false;
-
-            disconnectAll();
-
-            return;
-        }
-
-        pat =
-            $("pat")
-            .value
-            .trim();
-
-        await connectToDeriv(false);
-    };
-
-
-/* =========================================================
-   AUTO-RECONNECT WATCHDOG
-   Checks the live connec
+                
