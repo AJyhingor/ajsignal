@@ -16,7 +16,7 @@ html,body{
     margin:0;
     padding:0;
     width:100%;
-    min-height:100%;
+    height:100%;
     background:#07111f;
     color:#fff;
     font-family:Arial,Helvetica,sans-serif;
@@ -24,6 +24,7 @@ html,body{
 
 body{
     overflow-x:hidden;
+    overflow-y:hidden;
 }
 
 button,select,input{
@@ -35,6 +36,12 @@ button,select,input{
     max-width:1250px;
     margin:auto;
     padding:6px;
+    box-sizing:border-box;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
 }
 
 /* =========================================================
@@ -47,6 +54,7 @@ button,select,input{
     align-items:center;
     gap:6px;
     margin-bottom:6px;
+    flex-shrink:0;
 }
 
 .logo{
@@ -94,6 +102,7 @@ button,select,input{
     border-radius:8px;
     padding:5px;
     margin-bottom:6px;
+    flex-shrink:0;
 }
 
 .patInput{
@@ -137,6 +146,7 @@ button,select,input{
     grid-template-columns:1fr 1fr 1fr 1fr;
     gap:5px;
     margin-bottom:6px;
+    flex-shrink:0;
 }
 
 .control{
@@ -196,8 +206,21 @@ button,select,input{
    ========================================================= */
 
 .mainRow{
-    display:block;
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-height:0;
+    gap:6px;
     margin-bottom:6px;
+}
+
+.chartColumn{
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    gap:6px;
 }
 
 /* Side-by-side chart + positions only kicks in on genuinely
@@ -211,10 +234,18 @@ button,select,input{
         display:grid;
         grid-template-columns:minmax(0,1fr) 300px;
         gap:8px;
+        flex:1;
+        min-height:0;
+    }
+
+    .chartColumn{
+        min-height:0;
     }
 
     .positionPanel{
         margin-top:0 !important;
+        max-height:none;
+        height:100%;
     }
 }
 
@@ -223,6 +254,10 @@ button,select,input{
     border:1px solid #1c3855;
     border-radius:9px;
     overflow:hidden;
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
 }
 
 .chartTop{
@@ -257,7 +292,8 @@ button,select,input{
 .chartViewport{
     position:relative;
     width:100%;
-    height:clamp(240px,44vh,460px);
+    flex:1;
+    min-height:130px;
     background:#071321;
     overflow:hidden;
     touch-action:none;
@@ -314,6 +350,7 @@ button,select,input{
     padding:4px 6px;
     background:#0b192a;
     border-top:1px solid #162d45;
+    flex-shrink:0;
 }
 
 .chartNav button{
@@ -321,14 +358,14 @@ button,select,input{
     background:#071321;
     color:#a9bdd1;
     border-radius:5px;
-    padding:8px 16px;
-    font-size:15px;
+    padding:6px 14px;
+    font-size:14px;
     font-weight:900;
 }
 
 .chartNav span{
     color:#627991;
-    font-size:10px;
+    font-size:9px;
 }
 
 /* =========================================================
@@ -341,6 +378,10 @@ button,select,input{
     border-radius:9px;
     overflow:hidden;
     min-width:0;
+    flex-shrink:0;
+    max-height:40vh;
+    display:flex;
+    flex-direction:column;
 }
 
 .positionHeader{
@@ -355,6 +396,7 @@ button,select,input{
     font-size:14px;
     font-weight:900;
     text-transform:uppercase;
+    flex-shrink:0;
 }
 
 .positionHeader .arrow{
@@ -367,6 +409,11 @@ button,select,input{
 
 .positionBody{
     padding:0 6px 7px;
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
 }
 
 .positionPanel.collapsed .positionBody{
@@ -437,6 +484,7 @@ button,select,input{
     border-radius:8px;
     margin-top:5px;
     overflow:hidden;
+    flex-shrink:0;
 }
 
 .indicatorWindow.visible{
@@ -478,6 +526,7 @@ button,select,input{
     grid-template-columns:1fr 1fr;
     gap:7px;
     margin-bottom:6px;
+    flex-shrink:0;
 }
 
 .tradeBtn{
@@ -526,6 +575,7 @@ button,select,input{
     grid-template-columns:1fr 1fr 1fr 1fr;
     gap:5px;
     margin-bottom:6px;
+    flex-shrink:0;
 }
 
 .bottomBox{
@@ -662,6 +712,9 @@ button,select,input{
     border-radius:7px;
     padding:6px;
     margin-bottom:6px;
+    flex-shrink:0;
+    max-height:22vh;
+    overflow-y:auto;
 }
 
 .logPanel.show{
@@ -996,7 +1049,7 @@ button,select,input{
 
 <div class="mainRow">
 
-    <div>
+    <div class="chartColumn">
 
         <div class="chartPanel">
 
@@ -1073,7 +1126,7 @@ button,select,input{
     ================================================== -->
 
     <div id="positionPanel"
-         class="positionPanel">
+         class="positionPanel collapsed">
 
         <button id="positionHeader"
                 class="positionHeader">
@@ -3611,7 +3664,13 @@ document.querySelectorAll(
 
                 updateIndicatorWindow();
 
-                drawChart();
+                /* Indicator window opening/closing changes
+                   how much vertical space the chart has
+                   (they share the same flexible column), so
+                   the chart canvas needs a real resize, not
+                   just a redraw. */
+
+                resizeCanvas();
 
                 log(
                     type+
@@ -3638,7 +3697,7 @@ $("closeIndicator").onclick =
             .textContent =
             "SELECT ▼";
 
-        drawChart();
+        resizeCanvas();
     };
 
 
@@ -3746,6 +3805,14 @@ $("positionHeader").onclick =
             .classList.toggle(
                 "collapsed"
             );
+
+        /* Expanding/collapsing this panel changes how much
+           vertical room the chart has beneath it on phones
+           (they share the same flexible column), so give
+           the chart canvas a real resize, not just a
+           redraw. */
+
+        resizeCanvas();
     };
 
 
@@ -5405,6 +5472,11 @@ $("logButton").onclick =
             )
             ? "LOG ▲"
             : "LOG ▼";
+
+        /* Opening/closing the log takes space from the
+           same flexible column the chart lives in. */
+
+        resizeCanvas();
     };
 
 
