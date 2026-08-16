@@ -1294,6 +1294,17 @@ let reconnecting = false;
 
 let reconnectAttempts = 0;
 
+/*
+   Incremented on every connect attempt and on every
+   disconnect. Async connection steps (getAccounts, getOTP,
+   opening the authenticated WS) check this before touching
+   global state, so a stale DEMO connect that is still
+   in-flight can never overwrite a newer LIVE connection
+   (or vice versa). Mirrors the pattern from the reference
+   Ganeva Options Bot connection code.
+*/
+let connectionGeneration = 0;
+
 let currentMarket =
     "R_25";
 
@@ -4267,6 +4278,64 @@ function logAccountsFound(accounts){
 
 
 /* =========================================================
+   FIND SELECTED ACCOUNT
+   Primary match is by account_type/type/accountType. If
+   Deriv omits or renames that field, fall back to the
+   account_id/loginid prefix (DOT = demo, CR = real) the
+   same way the reference Ganeva Options Bot does, instead
+   of failing to connect outright.
+========================================================= */
+
+function findSelectedAccount(accounts){
+
+    const wantedTypes =
+        selectedAccountType ===
+        "demo"
+        ? ["demo","virtual"]
+        : ["live","real","real-money"];
+
+    let account =
+        accounts.find(
+            a=>
+                wantedTypes.includes(
+                    String(
+                        a.account_type ||
+                        a.type ||
+                        a.accountType ||
+                        ""
+                    ).toLowerCase()
+                )
+        );
+
+    if(account){
+        return account;
+    }
+
+    const prefix =
+        selectedAccountType ===
+        "demo"
+        ? "DOT"
+        : "CR";
+
+    account =
+        accounts.find(
+            a=>
+                String(
+                    a.account_id ||
+                    a.accountId ||
+                    a.loginid ||
+                    a.id ||
+                    ""
+                )
+                .toUpperCase()
+                .startsWith(prefix)
+        );
+
+    return account || null;
+}
+
+
+/* =========================================================
    OTP
 ========================================================= */
 
@@ -4348,15 +4417,18 @@ async function getOTP(account){
    AUTH WS
 ========================================================= */
 
-function openAuthenticatedWS(url){
+function openAuthenticatedWS(url,generation){
 
     return new Promise(
         (resolve,reject)=>{
 
             let settled=false;
 
-            authenticatedWS =
+            const ws =
                 new WebSocket(url);
+
+            authenticatedWS =
+                ws;
 
             const timeout =
                 setTimeout(
@@ -4367,7 +4439,7 @@ function openAuthenticatedWS(url){
                             settled=true;
 
                             try{
-                                authenticatedWS.close();
+                                ws.close();
                             }catch{}
 
                             reject(
@@ -4381,10 +4453,31 @@ function openAuthenticatedWS(url){
                     15000
                 );
 
-            authenticatedWS.onopen =
+            ws.onopen =
                 ()=>{
 
                     clearTimeout(timeout);
+
+                    /*
+                       A newer connect() call has already
+                       started (e.g. the user switched
+                       DEMO/LIVE while this one was still
+                       authenticating). Close this stale
+                       socket instead of letting it become
+                       the active connection.
+                    */
+
+                    if(
+                        generation !==
+                        connectionGeneration
+                    ){
+
+                        try{
+                            ws.close();
+                        }catch{}
+
+                        return;
+                    }
 
                     if(!settled){
 
@@ -4394,7 +4487,7 @@ function openAuthenticatedWS(url){
                     }
                 };
 
-            authenticatedWS.onerror =
+            ws.onerror =
                 ()=>{
 
                     clearTimeout(timeout);
@@ -4411,8 +4504,12 @@ function openAuthenticatedWS(url){
                     }
                 };
 
-            authenticatedWS.onclose =
+            ws.onclose =
                 ()=>{
+
+                    if(ws !== authenticatedWS){
+                        return;
+                    }
 
                     if(connected){
 
@@ -4439,7 +4536,7 @@ function openAuthenticatedWS(url){
                     }
                 };
 
-            authenticatedWS.onmessage =
+            ws.onmessage =
                 event=>{
 
                     let data;
@@ -5439,151 +5536,4 @@ viewport.addEventListener(
             event.clientX;
 
         dragStartPan =
-            panOffset;
-
-        viewport.setPointerCapture(
-            event.pointerId
-        );
-    }
-);
-
-
-viewport.addEventListener(
-    "pointermove",
-    event=>{
-
-        if(!dragging)
-            return;
-
-        const dx =
-            event.clientX-
-            dragStartX;
-
-        const barsPerPixel =
-            Math.max(
-                .08,
-                90/
-                Math.max(
-                    100,
-                    viewport.clientWidth
-                )
-            );
-
-        panOffset =
-            dragStartPan+
-            Math.round(
-                dx*
-                barsPerPixel*
-                -1
-            );
-
-        const maxPan =
-            Math.max(
-                0,
-                chartBars.length-20
-            );
-
-        panOffset =
-            Math.max(
-                0,
-                Math.min(
-                    maxPan,
-                    panOffset
-                )
-            );
-
-        drawChart();
-    }
-);
-
-
-viewport.addEventListener(
-    "pointerup",
-    ()=>{
-        dragging=false;
-    }
-);
-
-viewport.addEventListener(
-    "pointercancel",
-    ()=>{
-        dragging=false;
-    }
-);
-
-
-/* =========================================================
-   ACCOUNT MASK
-========================================================= */
-
-function maskAccount(id){
-
-    if(!id)
-        return "Not connected";
-
-    const s =
-        String(id);
-
-    if(s.length<=5)
-        return s;
-
-    return (
-        s.slice(0,2)+
-        "•••••"+
-        s.slice(-3)
-    );
-}
-
-
-/* =========================================================
-   CONNECT
-========================================================= */
-
-async function connectToDeriv(isAutoRetry){
-
-    if(!pat){
-
-        log(
-            "Paste your PAT before connecting.",
-            "bad"
-        );
-
-        return false;
-    }
-
-    if(!isAutoRetry){
-
-        $("connectBtn")
-            .disabled =
-            true;
-    }
-
-    $("chartStatus")
-        .textContent =
-        isAutoRetry
-        ? "RECONNECTING"
-        : "AUTHENTICATING";
-
-    try{
-
-        const accounts =
-            await getAccounts();
-
-        logAccountsFound(
-            accounts
-        );
-
-        const wantedTypes =
-            selectedAccountType ===
-            "demo"
-            ? ["demo","virtual"]
-            : ["live","real","real-money"];
-
-        const account =
-            accounts.find(
-                a=>
-                    wantedTypes.includes(
-                        String(
-                            a.account_type ||
-                            a.type ||
-                            a.accountTyp
+   
