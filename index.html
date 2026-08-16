@@ -89,6 +89,16 @@ button,select,input{
     font-size:24px;
 }
 
+#balance{
+    color:#ffc94d;
+}
+
+#digitalTime{
+    font-size:11px;
+    font-weight:700;
+    color:#c3d2e2;
+}
+
 /* =========================================================
    CONNECTION
    ========================================================= */
@@ -212,6 +222,7 @@ button,select,input{
     min-height:0;
     gap:6px;
     margin-bottom:6px;
+    overflow:hidden;
 }
 
 .chartColumn{
@@ -221,6 +232,7 @@ button,select,input{
     flex-direction:column;
     min-width:0;
     gap:6px;
+    overflow:hidden;
 }
 
 /* Side-by-side chart + positions only kicks in on genuinely
@@ -293,7 +305,7 @@ button,select,input{
     position:relative;
     width:100%;
     flex:1;
-    min-height:130px;
+    min-height:110px;
     background:#071321;
     overflow:hidden;
     touch-action:none;
@@ -347,7 +359,7 @@ button,select,input{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:4px 6px;
+    padding:3px 5px;
     background:#0b192a;
     border-top:1px solid #162d45;
     flex-shrink:0;
@@ -358,9 +370,12 @@ button,select,input{
     background:#071321;
     color:#a9bdd1;
     border-radius:5px;
-    padding:6px 14px;
+    width:26px;
+    height:26px;
+    padding:0;
     font-size:14px;
     font-weight:900;
+    line-height:1;
 }
 
 .chartNav span{
@@ -379,7 +394,7 @@ button,select,input{
     overflow:hidden;
     min-width:0;
     flex-shrink:0;
-    max-height:40vh;
+    max-height:30vh;
     display:flex;
     flex-direction:column;
 }
@@ -389,11 +404,11 @@ button,select,input{
     border:0;
     background:#0d1a2b;
     color:#52b7ff;
-    padding:13px 10px;
+    padding:9px 10px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    font-size:14px;
+    font-size:12px;
     font-weight:900;
     text-transform:uppercase;
     flex-shrink:0;
@@ -482,7 +497,7 @@ button,select,input{
     background:#071321;
     border:1px solid #1c3855;
     border-radius:8px;
-    margin-top:5px;
+    margin-top:0;
     overflow:hidden;
     flex-shrink:0;
 }
@@ -492,14 +507,14 @@ button,select,input{
 }
 
 .indicatorHeader{
-    height:36px;
+    height:26px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:0 10px;
+    padding:0 8px;
     background:#0b192a;
     border-bottom:1px solid #1c3855;
-    font-size:12px;
+    font-size:10px;
     font-weight:900;
     color:#52b7ff;
 }
@@ -508,12 +523,13 @@ button,select,input{
     border:0;
     background:transparent;
     color:#7890a7;
-    font-size:18px;
+    font-size:15px;
+    line-height:1;
 }
 
 #indicatorCanvas{
     width:100%;
-    height:clamp(90px,16vh,170px);
+    height:clamp(64px,11vh,110px);
     display:block;
 }
 
@@ -1423,6 +1439,12 @@ let publicWS = null;
 
 let connected = false;
 
+let shouldStayConnected = false;
+
+let reconnecting = false;
+
+let reconnectAttempts = 0;
+
 let currentMarket =
     "R_25";
 
@@ -1465,6 +1487,32 @@ let positions = [];
 
 let pendingTrades =
     new Map();
+
+
+/* =========================================================
+   LIVE PROPOSAL STREAM
+   A CALL and a PUT proposal are kept subscribed in the
+   background for the current market/stake/expiry, so a tap
+   on RISE/FALL can buy immediately with an already-fresh
+   price instead of waiting on a request/response round trip
+   at the moment that matters most.
+========================================================= */
+
+let liveProposals = {
+    RISE:null,
+    FALL:null
+};
+
+let liveProposalReqIds = {};
+
+let liveProposalSubIds = {
+    RISE:null,
+    FALL:null
+};
+
+let liveProposalKey = null;
+
+const LIVE_PROPOSAL_MAX_AGE_MS = 5000;
 
 
 /* =========================================================
@@ -1575,7 +1623,13 @@ function updateClock(){
     $("digitalTime")
         .textContent =
         new Date()
-        .toLocaleTimeString();
+        .toLocaleTimeString(
+            [],
+            {
+                hour:"2-digit",
+                minute:"2-digit"
+            }
+        );
 }
 
 setInterval(
@@ -2216,20 +2270,38 @@ function drawChart(){
     const topPad = 28;
     const bottomPad = 25;
 
-    /* GRID */
+    /* GRID
+       Columns are fixed at 8; rows are derived from the same
+       pixel cell size so grid squares stay uniform instead
+       of stretching thin now that the chart's height is
+       flexible and varies by device/panel state. */
 
     ctx.strokeStyle =
         "rgba(90,120,150,.14)";
 
     ctx.lineWidth = 1;
 
-    for(let i=1;i<6;i++){
+    const gridCols = 8;
+
+    const cellSize =
+        W/gridCols;
+
+    const plotAreaH =
+        H-topPad-bottomPad;
+
+    const gridRows =
+        Math.max(
+            2,
+            Math.round(
+                plotAreaH/cellSize
+            )
+        );
+
+    for(let i=1;i<gridRows;i++){
 
         const y =
             topPad+
-            (
-                H-topPad-bottomPad
-            )*i/6;
+            plotAreaH*i/gridRows;
 
         ctx.beginPath();
         ctx.moveTo(0,y);
@@ -2237,10 +2309,10 @@ function drawChart(){
         ctx.stroke();
     }
 
-    for(let i=1;i<8;i++){
+    for(let i=1;i<gridCols;i++){
 
         const x =
-            W*i/8;
+            W*i/gridCols;
 
         ctx.beginPath();
         ctx.moveTo(x,0);
@@ -2261,7 +2333,7 @@ function drawChart(){
         );
     }
 
-    /* PRICE SCALE */
+    /* PRICE SCALE - aligned to the same rows as the grid */
 
     ctx.font =
         "9px Arial";
@@ -2272,19 +2344,17 @@ function drawChart(){
     ctx.fillStyle =
         "#61778d";
 
-    for(let i=0;i<=5;i++){
+    for(let i=0;i<=gridRows;i++){
 
         const p =
             max-
             (
                 max-min
-            )*i/5;
+            )*i/gridRows;
 
         const y =
             topPad+
-            (
-                H-topPad-bottomPad
-            )*i/5;
+            plotAreaH*i/gridRows;
 
         ctx.fillText(
             formatPrice(p),
@@ -4038,6 +4108,131 @@ function expiryToObject(value){
 
 
 /* =========================================================
+   REFRESH LIVE PROPOSALS
+   Re-subscribes the background CALL/PUT price stream
+   whenever the market, stake, or expiry actually changes.
+   Cancels the previous subscriptions first so the server
+   doesn't accumulate stale streams.
+========================================================= */
+
+function refreshLiveProposals(){
+
+    if(
+        !connected ||
+        !authenticatedWS ||
+        authenticatedWS.readyState !==
+        WebSocket.OPEN
+    ){
+        return;
+    }
+
+    const stake =
+        Number(
+            $("stake").value
+        );
+
+    if(
+        !Number.isFinite(stake) ||
+        stake < 1
+    ){
+        return;
+    }
+
+    const expiryValue =
+        $("tradeExpiry").value;
+
+    const exp =
+        expiryToObject(
+            expiryValue
+        );
+
+    const key =
+        currentMarket+
+        "|"+
+        stake+
+        "|"+
+        exp.duration+
+        exp.unit;
+
+    if(key === liveProposalKey){
+        return;
+    }
+
+    liveProposalKey = key;
+
+    /* Cancel whatever was previously streaming */
+
+    ["RISE","FALL"].forEach(
+        direction=>{
+
+            const subId =
+                liveProposalSubIds[
+                    direction
+                ];
+
+            if(
+                subId &&
+                authenticatedWS.readyState ===
+                WebSocket.OPEN
+            ){
+
+                authenticatedWS.send(
+                    JSON.stringify({
+                        forget:subId
+                    })
+                );
+            }
+
+            liveProposalSubIds[
+                direction
+            ] = null;
+
+            liveProposals[
+                direction
+            ] = null;
+        }
+    );
+
+    ["RISE","FALL"].forEach(
+        direction=>{
+
+            const contractType =
+                direction === "RISE"
+                ? "CALL"
+                : "PUT";
+
+            const reqId =
+                req();
+
+            liveProposalReqIds[
+                reqId
+            ] = direction;
+
+            authenticatedWS.send(
+                JSON.stringify({
+                    proposal:1,
+                    subscribe:1,
+                    amount:stake,
+                    basis:"stake",
+                    contract_type:
+                        contractType,
+                    currency:
+                        accountCurrency,
+                    duration:
+                        exp.duration,
+                    duration_unit:
+                        exp.unit,
+                    underlying_symbol:
+                        currentMarket,
+                    req_id:reqId
+                })
+            );
+        }
+    );
+}
+
+
+/* =========================================================
    ACCOUNT TYPE
 ========================================================= */
 
@@ -4388,14 +4583,10 @@ function handleAuthenticatedMessage(data){
 
             $("balance")
                 .textContent =
+                "$"+
                 Number(
                     b.balance
-                ).toFixed(2)+
-                " "+
-                (
-                    b.currency ||
-                    accountCurrency
-                );
+                ).toFixed(2);
         }
 
         return;
@@ -4589,6 +4780,88 @@ function placeTrade(direction){
     btn.innerHTML =
         "SENDING…";
 
+    /* FAST PATH: a live-streamed proposal for this exact
+       direction/stake/expiry/market is already cached from
+       the background subscription - buy on it immediately,
+       skipping the proposal request/response round trip
+       entirely. This is what makes entry fast. */
+
+    const key =
+        currentMarket+
+        "|"+
+        stake+
+        "|"+
+        exp.duration+
+        exp.unit;
+
+    const cached =
+        liveProposals[direction];
+
+    if(
+        cached &&
+        key === liveProposalKey &&
+        (Date.now()-cached.updatedAt) <
+        LIVE_PROPOSAL_MAX_AGE_MS
+    ){
+
+        const buyReq =
+            req();
+
+        pendingTrades.set(
+            buyReq,
+            {
+                direction,
+                stake,
+                expiry,
+                market:currentMarket,
+                btn,
+                originalHTML
+            }
+        );
+
+        authenticatedWS.send(
+            JSON.stringify({
+                buy:
+                    cached.id,
+                price:
+                    cached.price,
+                req_id:
+                    buyReq
+            })
+        );
+
+        log(
+            "Fast entry: "+
+            direction+
+            " (live price).",
+            "info"
+        );
+
+        setTimeout(
+            ()=>{
+                if(
+                    tradeLock[direction] &&
+                    btn.classList.contains(
+                        "sending"
+                    )
+                ){
+                    unlockTradeButton(
+                        direction,
+                        btn,
+                        originalHTML
+                    );
+                }
+            },
+            8000
+        );
+
+        return;
+    }
+
+    /* FALLBACK: no fresh cached price yet (e.g. right after
+       connecting, or the stream hasn't answered), so request
+       a one-off proposal the normal way. */
+
     const request =
         req();
 
@@ -4681,17 +4954,57 @@ function handleProposal(data){
     if(!proposal)
         return;
 
+    const reqId =
+        Number(data.req_id);
+
+    /* Background live-stream update - cache it and stop,
+       this is not a one-off trade request. */
+
+    const liveDirection =
+        liveProposalReqIds[reqId];
+
+    if(liveDirection){
+
+        const liveAsk =
+            Number(
+                proposal.ask_price
+            );
+
+        if(
+            proposal.id &&
+            Number.isFinite(liveAsk)
+        ){
+
+            liveProposals[
+                liveDirection
+            ] = {
+                id:proposal.id,
+                price:liveAsk,
+                updatedAt:Date.now()
+            };
+
+            if(
+                data.subscription &&
+                data.subscription.id
+            ){
+
+                liveProposalSubIds[
+                    liveDirection
+                ] =
+                    data.subscription.id;
+            }
+        }
+
+        return;
+    }
+
     const trade =
-        pendingTrades.get(
-            Number(data.req_id)
-        );
+        pendingTrades.get(reqId);
 
     if(!trade)
         return;
 
-    pendingTrades.delete(
-        Number(data.req_id)
-    );
+    pendingTrades.delete(reqId);
 
     const askPrice =
         Number(
@@ -5013,6 +5326,8 @@ function changeMarket(symbol){
         openPublicWS();
     }
 
+    refreshLiveProposals();
+
     drawChart();
 }
 
@@ -5100,7 +5415,34 @@ $("tradeExpiry").onchange =
 
         currentTradeExpiry =
             this.value;
+
+        refreshLiveProposals();
     };
+
+
+/* =========================================================
+   STAKE INPUT
+   Debounced so the live proposal stream isn't re-subscribed
+   on every single keystroke while the amount is being typed.
+========================================================= */
+
+let stakeDebounceTimer = null;
+
+$("stake").addEventListener(
+    "input",
+    ()=>{
+
+        clearTimeout(
+            stakeDebounceTimer
+        );
+
+        stakeDebounceTimer =
+            setTimeout(
+                refreshLiveProposals,
+                500
+            );
+    }
+);
 
 
 /* =========================================================
@@ -5247,261 +5589,38 @@ function maskAccount(id){
    CONNECT
 ========================================================= */
 
-$("connectBtn").onclick =
-    async ()=>{
+async function connectToDeriv(isAutoRetry){
 
-        if(connected){
+    if(!pat){
 
-            disconnectAll();
+        log(
+            "Paste your PAT before connecting.",
+            "bad"
+        );
 
-            return;
-        }
+        return false;
+    }
 
-        pat =
-            $("pat")
-            .value
-            .trim();
-
-        if(!pat){
-
-            log(
-                "Paste your PAT before connecting.",
-                "bad"
-            );
-
-            return;
-        }
+    if(!isAutoRetry){
 
         $("connectBtn")
             .disabled =
             true;
-
-        $("chartStatus")
-            .textContent =
-            "AUTHENTICATING";
-
-        try{
-
-            const accounts =
-                await getAccounts();
-
-            const wantedPrefix =
-                selectedAccountType ===
-                "demo"
-                ? "DOT"
-                : "CR";
-
-            let account =
-                accounts.find(
-                    a=>
-                        String(
-                            a.account_id ||
-                            a.loginid ||
-                            ""
-                        ).startsWith(
-                            wantedPrefix
-                        )
-                );
-
-            if(!account){
-
-                account =
-                    accounts.find(
-                        a=>
-                            String(
-                                a.account_type ||
-                                ""
-                            ).toLowerCase() ===
-                            selectedAccountType
-                    );
-            }
-
-            if(!account){
-
-                throw new Error(
-                    "No "+
-                    selectedAccountType+
-                    " account was found."
-                );
-            }
-
-            accountId =
-                account.account_id ||
-                account.loginid ||
-                account.id;
-
-            accountCurrency =
-                account.currency ||
-                "USD";
-
-            const wsUrl =
-                await getOTP(
-                    accountId
-                );
-
-            await openAuthenticatedWS(
-                wsUrl
-            );
-
-            connected=true;
-
-            $("connectBtn")
-                .textContent =
-                "CONNECTED";
-
-            $("connectBtn")
-                .classList
-                .add(
-                    "connected"
-                );
-
-            $("chartStatus")
-                .textContent =
-                "CONNECTED";
-
-            subscribeAuthenticatedData();
-
-            openPublicWS();
-
-            log(
-                selectedAccountType
-                .toUpperCase()+
-                " Deriv account connected.",
-                "good"
-            );
-
-        }catch(error){
-
-            log(
-                error.message ||
-                "Connection failed.",
-                "bad"
-            );
-
-            $("chartStatus")
-                .textContent =
-                "CONNECTION FAILED";
-
-        }finally{
-
-            $("connectBtn")
-                .disabled =
-                false;
-        }
-    };
-
-
-/* =========================================================
-   DISCONNECT
-========================================================= */
-
-function disconnectAll(){
-
-    connected=false;
-
-    try{
-
-        if(authenticatedWS)
-            authenticatedWS.close();
-
-    }catch{}
-
-    try{
-
-        if(publicWS)
-            publicWS.close();
-
-    }catch{}
-
-    authenticatedWS=null;
-    publicWS=null;
-
-    accountId=null;
-
-    $("connectBtn")
-        .textContent =
-        "CONNECT";
-
-    $("connectBtn")
-        .classList
-        .remove(
-            "connected"
-        );
+    }
 
     $("chartStatus")
         .textContent =
-        "DISCONNECTED";
+        isAutoRetry
+        ? "RECONNECTING"
+        : "AUTHENTICATING";
 
-    $("balance")
-        .textContent =
-        "--";
+    try{
 
-    $("livePrice")
-        .textContent =
-        "--";
+        const accounts =
+            await getAccounts();
 
-    $("chartInfoText")
-        .textContent =
-        "Waiting for Deriv live market...";
-
-    log(
-        "Disconnected.",
-        "warn"
-    );
-}
-
-
-/* =========================================================
-   LOG TOGGLE
-========================================================= */
-
-$("logButton").onclick =
-    ()=>{
-
-        const panel =
-            $("logPanel");
-
-        panel.classList.toggle(
-            "show"
-        );
-
-        $("logButton")
-            .textContent =
-            panel.classList.contains(
-                "show"
-            )
-            ? "LOG ▲"
-            : "LOG ▼";
-
-        /* Opening/closing the log takes space from the
-           same flexible column the chart lives in. */
-
-        resizeCanvas();
-    };
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-$("chartMarketName")
-    .textContent =
-    currentMarket;
-
-$("chartInfoText")
-    .textContent =
-    "Deriv live 1M";
-
-resizeCanvas();
-
-drawChart();
-
-log(
-    "Ready. Paste PAT, choose DEMO/LIVE and connect.",
-    "info"
-);
-
-</script>
-
-</body>
-</html>
+        const wantedPrefix =
+            selectedAccountType ===
+            "demo"
+            ? "DOT"
+            : "
