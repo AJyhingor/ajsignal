@@ -4214,6 +4214,59 @@ async function getAccounts(){
 
 
 /* =========================================================
+   ACCOUNT DIAGNOSTIC LOG
+   Prints exactly what account_type values came back so a
+   REAL-connect failure can be told apart from "no real
+   account exists on this PAT" vs "the app/PAT lacks scope".
+========================================================= */
+
+function logAccountsFound(accounts){
+
+    if(
+        !Array.isArray(accounts) ||
+        accounts.length===0
+    ){
+
+        log(
+            "Deriv returned zero Options accounts for this PAT. "+
+            "Check that the PAT was generated with 'trade' scope "+
+            "and that the App ID is registered on developers.deriv.com.",
+            "bad"
+        );
+
+        return;
+    }
+
+    const summary =
+        accounts
+            .map(
+                a=>
+                    (
+                        a.account_id ||
+                        a.accountId ||
+                        a.loginid ||
+                        a.id ||
+                        "?"
+                    )+
+                    ":"+
+                    (
+                        a.account_type ||
+                        a.type ||
+                        a.accountType ||
+                        "unknown"
+                    )
+            )
+            .join(", ");
+
+    log(
+        "Accounts on this PAT -> "+
+        summary,
+        "info"
+    );
+}
+
+
+/* =========================================================
    OTP
 ========================================================= */
 
@@ -5516,6 +5569,10 @@ async function connectToDeriv(isAutoRetry){
         const accounts =
             await getAccounts();
 
+        logAccountsFound(
+            accounts
+        );
+
         const wantedTypes =
             selectedAccountType ===
             "demo"
@@ -5529,77 +5586,4 @@ async function connectToDeriv(isAutoRetry){
                         String(
                             a.account_type ||
                             a.type ||
-                            a.accountType ||
-                            ""
-                        ).toLowerCase()
-                    )
-            );
-
-        if(!account){
-
-            throw new Error(
-                "No "+
-                selectedAccountType.toUpperCase()+
-                " Options account found for this PAT."
-            );
-        }
-
-        accountId =
-            account.account_id ||
-            account.accountId ||
-            account.loginid ||
-            account.id;
-
-        if(!accountId){
-
-            throw new Error(
-                "Deriv account ID was not returned."
-            );
-        }
-
-        accountCurrency =
-            account.currency ||
-            "USD";
-
-        const wsUrl =
-            await getOTP(
-                accountId
-            );
-
-        await openAuthenticatedWS(
-            wsUrl
-        );
-
-        connected=true;
-
-        shouldStayConnected=true;
-
-        reconnectAttempts=0;
-
-        $("connectBtn")
-            .textContent =
-            "CONNECTED";
-
-        $("connectBtn")
-            .classList
-            .add(
-                "connected"
-            );
-
-        $("chartStatus")
-            .textContent =
-            "CONNECTED";
-
-        subscribeAuthenticatedData();
-
-        openPublicWS();
-
-        liveProposalKey = null;
-
-        refreshLiveProposals();
-
-        log(
-            (
-                isAutoRetry
-                ? "Reconnected - "
-                
+                            a.accountTyp
