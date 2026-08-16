@@ -243,21 +243,8 @@ button,select,input{
 @media(min-width:900px){
 
     .mainRow{
-        display:grid;
-        grid-template-columns:minmax(0,1fr) 300px;
-        gap:8px;
         flex:1;
         min-height:0;
-    }
-
-    .chartColumn{
-        min-height:0;
-    }
-
-    .positionPanel{
-        margin-top:0 !important;
-        max-height:none;
-        height:100%;
     }
 }
 
@@ -320,6 +307,7 @@ button,select,input{
 }
 
 .chartInfo{
+    display:none;
     position:absolute;
     top:7px;
     left:7px;
@@ -343,6 +331,7 @@ button,select,input{
 }
 
 .chartStatus{
+    display:none;
     position:absolute;
     right:7px;
     top:7px;
@@ -353,6 +342,72 @@ button,select,input{
     background:rgba(0,0,0,.55);
     color:#65c5ff;
     pointer-events:none;
+}
+
+/* =========================================================
+   OPEN POSITIONS TICKER
+   Compact strip along the top of the chart, replacing the
+   old full-size Open Positions panel. New positions are
+   prepended so the strip reads newest-first, right to left.
+   ========================================================= */
+
+.positionsTicker{
+    position:absolute;
+    top:5px;
+    left:5px;
+    right:5px;
+    z-index:6;
+    display:flex;
+    flex-direction:row-reverse;
+    gap:6px;
+    overflow-x:auto;
+    pointer-events:none;
+}
+
+.posTick{
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-width:46px;
+    background:rgba(5,13,23,.82);
+    border:1px solid rgba(83,130,170,.3);
+    border-radius:5px;
+    padding:2px 5px;
+    line-height:1.35;
+}
+
+.posTick .posSym{
+    font-size:9px;
+    font-weight:900;
+    color:#dce8f5;
+    white-space:nowrap;
+}
+
+.posTick .posArrow.up{
+    color:#35d68d;
+}
+
+.posTick .posArrow.down{
+    color:#ff526b;
+}
+
+.posTick .posPL{
+    font-size:9px;
+    font-weight:800;
+}
+
+.posTick .posPL.pos{
+    color:#45d58b;
+}
+
+.posTick .posPL.neg{
+    color:#ff6176;
+}
+
+.posTick .posTime{
+    font-size:8px;
+    color:#9fb3c8;
 }
 
 .chartNav{
@@ -381,111 +436,6 @@ button,select,input{
 .chartNav span{
     color:#627991;
     font-size:9px;
-}
-
-/* =========================================================
-   OPEN POSITIONS
-   ========================================================= */
-
-.positionPanel{
-    background:#0d1a2b;
-    border:1px solid #1c3855;
-    border-radius:9px;
-    overflow:hidden;
-    min-width:0;
-    flex-shrink:0;
-    max-height:30vh;
-    display:flex;
-    flex-direction:column;
-}
-
-.positionHeader{
-    width:100%;
-    border:0;
-    background:#0d1a2b;
-    color:#52b7ff;
-    padding:7px 9px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    font-size:11px;
-    font-weight:900;
-    text-transform:uppercase;
-    flex-shrink:0;
-}
-
-.positionHeader .arrow{
-    transition:.2s;
-}
-
-.positionPanel.collapsed .arrow{
-    transform:rotate(-90deg);
-}
-
-.positionBody{
-    padding:0 6px 7px;
-    flex:1;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    overflow-y:auto;
-}
-
-.positionPanel.collapsed .positionBody{
-    display:none;
-}
-
-.positionTableHead,
-.positionRow{
-    display:grid;
-    grid-template-columns:1fr .8fr 1fr .9fr;
-    gap:3px;
-    align-items:center;
-}
-
-.positionTableHead{
-    color:#627991;
-    font-size:10px;
-    text-transform:uppercase;
-    padding:6px 3px;
-    border-bottom:1px solid #1c3855;
-}
-
-.positionRow{
-    min-height:46px;
-    border-bottom:1px solid rgba(255,255,255,.05);
-    font-size:12px;
-}
-
-.positionRow:last-child{
-    border-bottom:0;
-}
-
-.positionMarket{
-    font-weight:900;
-}
-
-.positionRise{
-    color:#35d68d;
-}
-
-.positionFall{
-    color:#ff526b;
-}
-
-.positionPL{
-    font-weight:900;
-}
-
-.positionExpiry{
-    font-weight:800;
-}
-
-.positionEmpty{
-    text-align:center;
-    color:#627991;
-    font-size:9px;
-    padding:12px 5px;
 }
 
 /* =========================================================
@@ -644,7 +594,9 @@ button,select,input{
     display:none;
     position:absolute;
     z-index:100;
-    margin-top:3px;
+    left:0;
+    right:0;
+    bottom:calc(100% + 4px);
     background:#0d1a2b;
     border:1px solid #294967;
     border-radius:6px;
@@ -658,14 +610,14 @@ button,select,input{
 
 .indicatorMenu button{
     display:block;
-    width:190px;
+    width:100%;
     border:0;
     border-bottom:1px solid #1c3855;
     background:#0d1a2b;
     color:#fff;
     text-align:left;
-    padding:13px 10px;
-    font-size:13px;
+    padding:8px 10px;
+    font-size:11px;
 }
 
 .indicatorMenu button:hover{
@@ -724,15 +676,23 @@ button,select,input{
    SYSTEM LOG
    ========================================================= */
 
+.logBox{
+    position:relative;
+}
+
 .logPanel{
     display:none;
+    position:absolute;
+    z-index:100;
+    left:0;
+    right:0;
+    bottom:calc(100% + 4px);
     background:#0d1a2b;
-    border:1px solid #1c3855;
-    border-radius:7px;
+    border:1px solid #294967;
+    border-radius:6px;
     padding:6px;
-    margin-bottom:6px;
-    flex-shrink:0;
-    max-height:22vh;
+    box-shadow:0 8px 20px rgba(0,0,0,.4);
+    max-height:26vh;
     overflow-y:auto;
 }
 
@@ -794,14 +754,6 @@ button,select,input{
         flex:1;
     }
 
-    .mainRow{
-        display:block;
-    }
-
-    .positionPanel{
-        margin-top:5px;
-    }
-
     .tradeBtn{
         font-size:16px;
     }
@@ -829,11 +781,6 @@ button,select,input{
     .chartControl select{
         height:34px;
         font-size:11px;
-    }
-
-    .positionRow{
-        font-size:10px;
-        min-height:36px;
     }
 
     .bottomRow{
@@ -1006,7 +953,7 @@ button,select,input{
 
 
 <!-- =====================================================
-     CHART + OPEN POSITIONS
+     CHART
 ===================================================== -->
 
 <div class="mainRow">
@@ -1037,6 +984,10 @@ button,select,input{
                 <div id="chartStatus"
                      class="chartStatus">
                     DISCONNECTED
+                </div>
+
+                <div id="positionsTicker"
+                     class="positionsTicker">
                 </div>
 
             </div>
@@ -1082,51 +1033,8 @@ button,select,input{
 
     </div>
 
-
-    <!-- =================================================
-         OPEN POSITIONS
-    ================================================== -->
-
-    <div id="positionPanel"
-         class="positionPanel collapsed">
-
-        <button id="positionHeader"
-                class="positionHeader">
-
-            <span>
-                OPEN POSITIONS
-            </span>
-
-            <span class="arrow">
-                ▼
-            </span>
-
-        </button>
-
-        <div class="positionBody">
-
-            <div class="positionTableHead">
-
-                <div>Mkt</div>
-                <div>Stake</div>
-                <div>Live PL</div>
-                <div>Ept</div>
-
-            </div>
-
-            <div id="positionsList">
-
-                <div class="positionEmpty">
-                    No open positions
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
 </div>
+
 
 
 <!-- =====================================================
@@ -1318,7 +1226,7 @@ button,select,input{
     </div>
 
 
-    <div class="bottomBox">
+    <div class="bottomBox logBox">
 
         <label class="bottomLabel">
             System Log
@@ -1329,20 +1237,15 @@ button,select,input{
             LOG ▼
         </button>
 
-    </div>
+        <div id="logPanel"
+             class="logPanel">
 
-</div>
+            <div id="log"
+                 class="log">
+            </div>
 
+        </div>
 
-<!-- =====================================================
-     SYSTEM LOG
-===================================================== -->
-
-<div id="logPanel"
-     class="logPanel">
-
-    <div id="log"
-         class="log">
     </div>
 
 </div>
@@ -3635,6 +3538,22 @@ document.addEventListener(
                     "show"
                 );
         }
+
+        if(
+            !event.target.closest(
+                ".logBox"
+            )
+        ){
+
+            $("logPanel")
+                .classList.remove(
+                    "show"
+                );
+
+            $("logButton")
+                .textContent =
+                "LOG ▼";
+        }
     }
 );
 
@@ -3811,104 +3730,76 @@ $("macdSignal").onchange =
 
 
 /* =========================================================
-   POSITION PANEL
-========================================================= */
-
-$("positionHeader").onclick =
-    ()=>{
-
-        $("positionPanel")
-            .classList.toggle(
-                "collapsed"
-            );
-
-        /* Expanding/collapsing this panel changes how much
-           vertical room the chart has beneath it on phones
-           (they share the same flexible column), so give
-           the chart canvas a real resize, not just a
-           redraw. */
-
-        resizeCanvas();
-    };
-
-
-/* =========================================================
    RENDER POSITIONS
+   Populates the small ticker strip along the top of the
+   chart instead of a separate panel. Newest position is
+   prepended (row-reverse in CSS reads it right to left).
 ========================================================= */
 
 function renderPositions(){
 
     const box =
-        $("positionsList");
-
-    if(!positions.length){
-
-        box.innerHTML =
-            `<div class="positionEmpty">
-                No open positions
-            </div>`;
-
-        return;
-    }
+        $("positionsTicker");
 
     box.innerHTML = "";
 
     positions.forEach(
         position=>{
 
-            const row =
+            const item =
                 document.createElement(
                     "div"
                 );
 
-            row.className =
-                "positionRow";
+            item.className =
+                "posTick";
 
-            const market =
+            const sym =
                 document.createElement(
                     "div"
                 );
 
-            market.className =
-                "positionMarket "+
-                (
-                    position.direction ===
-                    "RISE"
-                    ? "positionRise"
-                    : "positionFall"
-                );
+            sym.className =
+                "posSym";
 
-            market.textContent =
-                position.market+
-                (
-                    position.direction ===
-                    "RISE"
-                    ? " 👆"
-                    : " 👇"
-                );
+            const arrowChar =
+                position.direction ===
+                "RISE"
+                ? "△"
+                : "▽";
 
-            const stake =
-                document.createElement(
-                    "div"
-                );
+            const arrowClass =
+                position.direction ===
+                "RISE"
+                ? "up"
+                : "down";
 
-            stake.textContent =
-                "$"+
-                Number(
-                    position.stake
-                ).toFixed(2);
+            sym.innerHTML =
+                escapeHTML(
+                    position.market
+                )+
+                ' <span class="posArrow '+
+                arrowClass+
+                '">'+
+                arrowChar+
+                "</span>";
 
             const pl =
                 document.createElement(
                     "div"
                 );
 
-            pl.className =
-                "positionPL";
-
             const livePL =
                 Number(
                     position.profit || 0
+                );
+
+            pl.className =
+                "posPL "+
+                (
+                    livePL>=0
+                    ? "pos"
+                    : "neg"
                 );
 
             pl.textContent =
@@ -3919,32 +3810,26 @@ function renderPositions(){
                 )+
                 livePL.toFixed(2);
 
-            pl.style.color =
-                livePL>=0
-                ? "#45d58b"
-                : "#ff6176";
-
-            const expiry =
+            const time =
                 document.createElement(
                     "div"
                 );
 
-            expiry.className =
-                "positionExpiry";
+            time.className =
+                "posTime";
 
-            expiry.textContent =
+            time.textContent =
                 formatRemaining(
                     position.expiryTime
                 );
 
-            row.append(
-                market,
-                stake,
+            item.append(
+                sym,
                 pl,
-                expiry
+                time
             );
 
-            box.appendChild(row);
+            box.appendChild(item);
         }
     );
 }
@@ -5600,4 +5485,120 @@ async function connectToDeriv(isAutoRetry){
 
             throw new Error(
                 "No "+
-                selectedAccountT
+                selectedAccountType+
+                " account was found."
+            );
+        }
+
+        accountId =
+            account.account_id ||
+            account.loginid ||
+            account.id;
+
+        accountCurrency =
+            account.currency ||
+            "USD";
+
+        const wsUrl =
+            await getOTP(
+                accountId
+            );
+
+        await openAuthenticatedWS(
+            wsUrl
+        );
+
+        connected=true;
+
+        shouldStayConnected=true;
+
+        reconnectAttempts=0;
+
+        $("connectBtn")
+            .textContent =
+            "CONNECTED";
+
+        $("connectBtn")
+            .classList
+            .add(
+                "connected"
+            );
+
+        $("chartStatus")
+            .textContent =
+            "CONNECTED";
+
+        subscribeAuthenticatedData();
+
+        openPublicWS();
+
+        liveProposalKey = null;
+
+        refreshLiveProposals();
+
+        log(
+            (
+                isAutoRetry
+                ? "Reconnected - "
+                : ""
+            )+
+            selectedAccountType
+            .toUpperCase()+
+            " Deriv account connected.",
+            "good"
+        );
+
+        return true;
+
+    }catch(error){
+
+        log(
+            error.message ||
+            "Connection failed.",
+            "bad"
+        );
+
+        $("chartStatus")
+            .textContent =
+            isAutoRetry
+            ? "RECONNECT FAILED"
+            : "CONNECTION FAILED";
+
+        return false;
+
+    }finally{
+
+        if(!isAutoRetry){
+
+            $("connectBtn")
+                .disabled =
+                false;
+        }
+    }
+}
+
+
+$("connectBtn").onclick =
+    async ()=>{
+
+        if(connected){
+
+            shouldStayConnected=false;
+
+            disconnectAll();
+
+            return;
+        }
+
+        pat =
+            $("pat")
+            .value
+            .trim();
+
+        await connectToDeriv(false);
+    };
+
+
+/* =========================================================
+   AUTO-RECONNECT WATCHDOG
+   Checks the live connec
