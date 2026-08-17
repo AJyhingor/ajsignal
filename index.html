@@ -156,7 +156,7 @@
         }
 
         /* =========================================================
-           TOP CONTROLS — all dropdowns now uniform (same as Indicator/Log)
+           TOP CONTROLS — compact dropdowns (like Indicator/Log)
            ========================================================= */
 
         .controlGrid {
@@ -172,7 +172,7 @@
             border: 1px solid #1c3855;
             border-radius: 8px;
             padding: 4px;
-            min-height: 50px;
+            min-height: 44px;
         }
 
         .controlTitle {
@@ -181,28 +181,29 @@
             font-size: 8px;
             font-weight: 900;
             text-transform: uppercase;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
-        /* Unified dropdown style — matches Indicator / Log */
+        /* Unified compact dropdown style */
         .controlValue,
         .bottomSelect,
         .stakeInput,
         .indicatorButton,
         .logButton {
             width: 100%;
-            height: 32px;
+            height: 28px;
             border: 1px solid #294967;
             background: #071321;
             color: #fff;
             border-radius: 5px;
             text-align: center;
             font-weight: 900;
-            font-size: 11px;
+            font-size: 10px;
             outline: none;
             cursor: pointer;
             appearance: auto;
             -webkit-appearance: auto;
+            padding: 0 4px;
         }
 
         .stakeInput {
@@ -213,6 +214,7 @@
         .logButton {
             cursor: pointer;
             font-size: 10px;
+            height: 28px;
         }
 
         .accountSwitch {
@@ -222,12 +224,12 @@
 
         .accountSwitch button {
             flex: 1;
-            height: 30px;
+            height: 28px;
             border: 1px solid #294967;
             border-radius: 5px;
             background: #071321;
             color: #aebfd2;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             cursor: pointer;
         }
@@ -292,21 +294,21 @@
         .chartControl label {
             display: block;
             color: #7288a0;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .chartControl select {
             width: 100%;
-            height: 32px;
+            height: 28px;
             border: 1px solid #294967;
             border-radius: 5px;
             background: #071321;
             color: #fff;
-            padding: 0 6px;
+            padding: 0 4px;
             outline: none;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             cursor: pointer;
         }
@@ -368,7 +370,7 @@
         }
 
         /* =========================================================
-           OPEN POSITIONS TICKER — left-to-right, compact
+           OPEN POSITIONS TICKER — left-to-right, compact, colored PL
            ========================================================= */
 
         .positionsTicker {
@@ -379,7 +381,6 @@
             z-index: 6;
             display: flex;
             flex-direction: row;
-            /* left-to-right */
             gap: 5px;
             overflow-x: auto;
             pointer-events: none;
@@ -391,12 +392,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
+            min-width: 32px;
             background: rgba(5, 13, 23, .78);
             border: 1px solid rgba(83, 130, 170, .25);
             border-radius: 4px;
             padding: 1px 4px;
-            line-height: 1.25;
+            line-height: 1.2;
             font-size: 9px;
         }
 
@@ -406,11 +407,11 @@
             white-space: nowrap;
         }
 
-        .posTick .posArrow.up {
+        .posTick .posArrow.pos {
             color: #35d68d;
         }
 
-        .posTick .posArrow.down {
+        .posTick .posArrow.neg {
             color: #ff526b;
         }
 
@@ -592,7 +593,7 @@
             color: #7288a0;
             font-size: 8px;
             text-transform: uppercase;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -628,8 +629,8 @@
             background: #0d1a2b;
             color: #fff;
             text-align: left;
-            padding: 8px 10px;
-            font-size: 11px;
+            padding: 6px 8px;
+            font-size: 10px;
             cursor: pointer;
         }
 
@@ -642,7 +643,7 @@
             position: absolute;
             left: 0;
             right: 0;
-            bottom: 38px;
+            bottom: 34px;
             z-index: 50;
             background: #0d1a2b;
             border: 1px solid #294967;
@@ -660,8 +661,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 6px;
-            margin-bottom: 8px;
-            font-size: 12px;
+            margin-bottom: 6px;
+            font-size: 11px;
             color: #a8bacd;
         }
 
@@ -671,14 +672,14 @@
 
         .settingRow input,
         .settingRow select {
-            width: 86px;
-            height: 34px;
+            width: 80px;
+            height: 28px;
             background: #071321;
             border: 1px solid #294967;
             border-radius: 4px;
             color: #fff;
             text-align: center;
-            font-size: 12px;
+            font-size: 10px;
         }
 
         /* =========================================================
@@ -774,6 +775,29 @@
             .chartNav .dailyPL {
                 font-size: 10px;
             }
+            .controlGrid {
+                gap: 4px;
+            }
+            .control {
+                min-height: 40px;
+                padding: 3px;
+            }
+            .controlValue,
+            .bottomSelect,
+            .stakeInput,
+            .indicatorButton,
+            .logButton {
+                height: 26px;
+                font-size: 9px;
+            }
+            .chartControl select {
+                height: 26px;
+                font-size: 9px;
+            }
+            .chartTop {
+                gap: 4px;
+                padding: 4px;
+            }
         }
 
         @media(max-width:450px) {
@@ -787,18 +811,17 @@
                 font-size: 14px;
             }
             .chartTop {
-                gap: 4px;
-                padding: 5px;
+                gap: 3px;
+                padding: 3px;
             }
             .chartControl select {
-                height: 30px;
-                font-size: 10px;
+                height: 24px;
+                font-size: 8px;
             }
             .bottomRow {
                 gap: 4px;
             }
             .bottomBox {
-                min-height: auto;
                 padding: 3px 2px;
             }
             .bottomLabel {
@@ -809,8 +832,8 @@
             .stakeInput,
             .indicatorButton,
             .logButton {
-                height: 28px;
-                font-size: 9px;
+                height: 24px;
+                font-size: 8px;
             }
             .chartNav .dailyPL {
                 font-size: 9px;
@@ -872,7 +895,7 @@
 
 
         <!-- =====================================================
-             COMPACT TOP CONTROLS — all dropdowns now uniform
+             COMPACT TOP CONTROLS
         ===================================================== -->
 
         <div class="controlGrid">
@@ -927,8 +950,7 @@
                     <option value="1t">1T</option>
                     <option value="5t">5T</option>
                     <option value="1m" selected>1M</option>
-                    <option value="5m">5M</option>
-                    <option value="15m">15M</option>
+                    <!-- removed 5m and 15m -->
 
                 </select>
 
@@ -1313,6 +1335,7 @@
                 dailyPL = 0;
                 dailyPLResetDate = today;
                 updateDailyPLDisplay();
+                log("Daily P&L reset at midnight.", "info");
             }
         }
 
@@ -1335,6 +1358,7 @@
             resetDailyPLIfNeeded();
             dailyPL += amount;
             updateDailyPLDisplay();
+            log("Daily P&L updated: " + (amount >= 0 ? "+" : "") + amount.toFixed(2), "info");
         }
 
 
@@ -1838,8 +1862,7 @@
 
 
         /* =========================================================
-           BUILD BARS — candle size now independent of chart time
-           (zoom level controls candle width)
+           BUILD BARS
         ========================================================= */
 
         function buildBars(ticks, mode) {
@@ -1954,7 +1977,7 @@
 
 
         /* =========================================================
-           VISIBLE RANGE — zoom controls how many bars visible
+           VISIBLE RANGE
         ========================================================= */
 
         function getVisibleRange(totalBars) {
@@ -2034,7 +2057,7 @@
 
 
         /* =========================================================
-           CHART DRAW — candle width controlled by zoomLevel only
+           CHART DRAW
         ========================================================= */
 
         function drawChart() {
@@ -2206,13 +2229,9 @@
                 plotW
             } = getPlotGeometry(W);
 
-            /* --- CANDLE WIDTH: controlled by zoomLevel only --- */
-            /* base width at zoom=1 is about 8px, scales inversely with zoom */
+            /* candle width controlled by zoom */
             const baseCandleWidth = 8;
             const candleW = Math.max(2, baseCandleWidth / zoomLevel);
-
-            /* spacing = plotW / view.length, but we use candleW directly */
-            /* we need to compute x positions based on view length and plotW */
             const spacing = plotW / view.length;
 
             if (currentChartStyle === "line") {
@@ -2247,7 +2266,7 @@
 
             } else {
 
-                /* Candles — width fixed by zoom, not by bar count */
+                /* Candles */
                 view.forEach(
                     (bar, i) => {
 
@@ -3667,8 +3686,7 @@
 
 
         /* =========================================================
-           RENDER POSITIONS — left-to-right, compact, no market symbol
-           format: △+0.45 / 1:23
+           RENDER POSITIONS — compact, colored by P&L
         ========================================================= */
 
         function renderPositions() {
@@ -3678,7 +3696,6 @@
 
             box.innerHTML = "";
 
-            /* Show newest first (leftmost) */
             for (const position of positions) {
 
                 const item =
@@ -3705,22 +3722,20 @@
                     "△" :
                     "▽";
 
-                const cls =
-                    position.direction ===
-                    "RISE" ?
-                    "up" :
-                    "down";
+                const sign =
+                    plVal >= 0 ?
+                    "+" :
+                    "";
 
                 arrow.className =
-                    "posArrow " + cls;
+                    "posArrow " +
+                    (plVal >= 0 ?
+                        "pos" :
+                        "neg");
 
                 arrow.textContent =
                     arrowChar +
-                    (
-                        plVal >= 0 ?
-                        "+" :
-                        ""
-                    ) +
+                    sign +
                     plVal.toFixed(2);
 
                 const time =
@@ -3790,7 +3805,7 @@
 
 
         /* =========================================================
-           EXPIRY OBJECT — supports all new values
+           EXPIRY OBJECT
         ========================================================= */
 
         function expiryToObject(value) {
@@ -4451,7 +4466,6 @@
             FALL: 0
         };
 
-        /* Track if live price is moving */
         let lastTickTimestamp = 0;
         let isPriceMoving = false;
 
@@ -4461,7 +4475,6 @@
                 event.preventDefault();
             }
 
-            /* Only allow trade if price is moving (live tick received recently) */
             if (!isPriceMoving && connected) {
                 log(
                     "Price not moving — wait for live tick before trading.",
@@ -4486,13 +4499,11 @@
             placeTrade(direction);
         }
 
-        /* Monitor price liveness */
         setInterval(() => {
             const now = Date.now();
             isPriceMoving = (now - lastTickTimestamp) < 5000;
         }, 1000);
 
-        /* Update timestamp on each tick */
         const origHandlePublicMessage = handlePublicMessage;
         handlePublicMessage = function(data) {
             if (data.msg_type === "tick" && data.tick) {
@@ -4885,7 +4896,6 @@
 
             if (!trade) {
 
-                /* Find any pending buy request */
                 for (
                     const [key, value] of pendingTrades
                 ) {
@@ -4976,7 +4986,6 @@
                 "good"
             );
 
-            /* Subscribe to contract updates for fast settlement */
             authenticatedWS.send(
                 JSON.stringify({
                     proposal_open_contract: 1,
@@ -4989,7 +4998,7 @@
 
 
         /* =========================================================
-           OPEN CONTRACT — fast settlement, immediate expiry removal
+           OPEN CONTRACT — updates daily PL and logs result
         ========================================================= */
 
         function handleOpenContract(contract) {
@@ -5050,7 +5059,6 @@
 
             drawChart();
 
-            /* IMMEDIATE removal on settlement — no network dependency */
             if (
                 contract.is_sold ||
                 contract.status === "sold" ||
@@ -5065,7 +5073,7 @@
                         0
                     );
 
-                /* Add to daily P&L */
+                /* Update daily P&L */
                 addToDailyPL(profitAmt);
 
                 log(
@@ -5096,7 +5104,7 @@
 
 
         /* =========================================================
-           LOCAL EXPIRY WATCHER — removes expired positions even if network lags
+           LOCAL EXPIRY WATCHER — removes expired positions
         ========================================================= */
 
         setInterval(() => {
@@ -5105,7 +5113,6 @@
             positions = positions.filter(p => {
                 if (p.expiryTime && p.expiryTime <= now) {
                     removed = true;
-                    /* Log once per expiry */
                     log(
                         p.direction +
                         " position expired (local timer).",
@@ -5309,7 +5316,7 @@
 
 
         /* =========================================================
-           ZOOM — fixed to work properly
+           ZOOM
         ========================================================= */
 
         $("zoomIn").onclick =
@@ -5742,7 +5749,7 @@
 
 
         /* =========================================================
-           AUTO-RECONNECT — fast (every 2 seconds)
+           AUTO-RECONNECT
         ========================================================= */
 
         setInterval(
