@@ -744,6 +744,69 @@
         }
 
         /* =========================================================
+           GENERIC BUTTON-DROPDOWNS (Market / Chart Time / Chart / Expiry)
+           Same interaction model as Indicator / Log
+           ========================================================= */
+
+        .dropdownBox {
+            position: relative;
+        }
+
+        .dropMenu {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            left: 0;
+            right: 0;
+            background: #0d1a2b;
+            border: 1px solid #294967;
+            border-radius: 6px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
+            overflow: hidden;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        .dropMenu.show {
+            display: block;
+        }
+
+        .dropMenu.openDown {
+            top: calc(100% + 4px);
+        }
+
+        .dropMenu.openUp {
+            bottom: calc(100% + 4px);
+        }
+
+        .dropMenu button {
+            display: block;
+            width: 100%;
+            border: 0;
+            border-bottom: 1px solid #1c3855;
+            background: #0d1a2b;
+            color: #fff;
+            text-align: center;
+            padding: 7px 8px;
+            font-size: 10px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .dropMenu button:last-child {
+            border-bottom: 0;
+        }
+
+        .dropMenu button:hover {
+            background: #145e99;
+        }
+
+        .dropMenu button.selected {
+            background: #145e99;
+            color: #fff;
+        }
+
+        /* =========================================================
            MOBILE
            ========================================================= */
 
@@ -921,59 +984,55 @@
             </div>
 
 
-            <div class="control">
+            <div class="control dropdownBox" id="marketBox">
 
                 <div class="controlTitle">
                     Market
                 </div>
 
-                <select id="marketSelect" class="controlValue">
+                <button id="marketButton" class="controlValue" type="button">R_25 ▼</button>
 
-                    <option value="R_25">R_25</option>
-                    <option value="R_50">R_50</option>
-                    <option value="R_75">R_75</option>
-                    <option value="R_100">R_100</option>
-
-                </select>
+                <div id="marketMenu" class="dropMenu openDown">
+                    <button type="button" data-value="R_25">R_25</button>
+                    <button type="button" data-value="R_50">R_50</button>
+                    <button type="button" data-value="R_75">R_75</button>
+                    <button type="button" data-value="R_100">R_100</button>
+                </div>
 
             </div>
 
 
-            <div class="control">
+            <div class="control dropdownBox" id="chartTimeBox">
 
                 <div class="controlTitle">
                     Chart Time
                 </div>
 
-                <select id="chartTime" class="controlValue">
+                <button id="chartTimeButton" class="controlValue" type="button">1M ▼</button>
 
-                    <option value="1t">1T</option>
-                    <option value="5t">5T</option>
-                    <option value="1m" selected>1M</option>
-                    <!-- removed 5m and 15m -->
-
-                </select>
+                <div id="chartTimeMenu" class="dropMenu openDown">
+                    <button type="button" data-value="1t">1T</button>
+                    <button type="button" data-value="5t">5T</button>
+                    <button type="button" data-value="1m">1M</button>
+                    <button type="button" data-value="5m">5M</button>
+                    <button type="button" data-value="15m">15M</button>
+                </div>
 
             </div>
 
 
-            <div class="control">
+            <div class="control dropdownBox" id="chartStyleBox">
 
                 <div class="controlTitle">
                     Chart
                 </div>
 
-                <select id="chartStyle" class="controlValue">
+                <button id="chartStyleButton" class="controlValue" type="button">Candles ▼</button>
 
-                    <option value="candles" selected>
-                        Candles
-                    </option>
-
-                    <option value="line">
-                        Line
-                    </option>
-
-                </select>
+                <div id="chartStyleMenu" class="dropMenu openDown">
+                    <button type="button" data-value="candles">Candles</button>
+                    <button type="button" data-value="line">Line</button>
+                </div>
 
             </div>
 
@@ -1018,13 +1077,13 @@
 
                     <div class="chartNav">
 
-                        <button id="zoomOut">−</button>
+                        <button id="zoomOut" type="button">−</button>
 
                         <span id="dailyPL" class="dailyPL zero">
                             $0.00
                         </span>
 
-                        <button id="zoomIn">+</button>
+                        <button id="zoomIn" type="button">+</button>
 
                     </div>
 
@@ -1100,26 +1159,26 @@
             </div>
 
 
-            <div class="bottomBox">
+            <div class="bottomBox dropdownBox" id="expiryBox">
 
                 <label class="bottomLabel">
                     Expiry Time
                 </label>
 
-                <select id="tradeExpiry" class="bottomSelect">
+                <button id="expiryButton" class="bottomSelect" type="button">5M ▼</button>
 
-                    <option value="5t">5T</option>
-                    <option value="10t">10T</option>
-                    <option value="15t">15T</option>
-                    <option value="1m">1M</option>
-                    <option value="2m">2M</option>
-                    <option value="3m">3M</option>
-                    <option value="5m" selected>5M</option>
-                    <option value="10m">10M</option>
-                    <option value="15m">15M</option>
-                    <option value="custom">Custom</option>
-
-                </select>
+                <div id="expiryMenu" class="dropMenu openUp">
+                    <button type="button" data-value="5t">5T</button>
+                    <button type="button" data-value="10t">10T</button>
+                    <button type="button" data-value="15t">15T</button>
+                    <button type="button" data-value="1m">1M</button>
+                    <button type="button" data-value="2m">2M</button>
+                    <button type="button" data-value="3m">3M</button>
+                    <button type="button" data-value="5m">5M</button>
+                    <button type="button" data-value="10m">10M</button>
+                    <button type="button" data-value="15m">15M</button>
+                    <button type="button" data-value="custom">Custom</button>
+                </div>
 
             </div>
 
@@ -1980,15 +2039,21 @@
            VISIBLE RANGE
         ========================================================= */
 
+        function getVisibleCount() {
+
+            return Math.max(
+                20,
+                Math.floor(
+                    75 / zoomLevel
+                )
+            );
+        }
+
+
         function getVisibleRange(totalBars) {
 
             const visible =
-                Math.max(
-                    20,
-                    Math.floor(
-                        75 / zoomLevel
-                    )
-                );
+                getVisibleCount();
 
             const end =
                 totalBars -
@@ -2005,7 +2070,8 @@
 
             return {
                 start,
-                end
+                end,
+                visible
             };
         }
 
@@ -2109,7 +2175,8 @@
 
             const {
                 start,
-                end
+                end,
+                visible: visibleCount
             } = getVisibleRange(
                 chartBars.length
             );
@@ -2229,10 +2296,16 @@
                 plotW
             } = getPlotGeometry(W);
 
-            /* candle width controlled by zoom */
-            const baseCandleWidth = 8;
-            const candleW = Math.max(2, baseCandleWidth / zoomLevel);
-            const spacing = plotW / view.length;
+            /* Spacing is derived from the zoom-controlled visible-bar
+               target (NOT the actual bar count), so switching chart
+               timeframe never changes candle size — only the zoom
+               buttons do. Bars are right-aligned so the most recent
+               candle always sits nearest the live price line. */
+            const spacing = plotW / visibleCount;
+            const indexOffset = visibleCount - view.length;
+
+            /* candle width driven directly by zoom + spacing */
+            const candleW = Math.max(2, Math.min(spacing * 0.72, 16));
 
             if (currentChartStyle === "line") {
 
@@ -2243,7 +2316,8 @@
 
                         const x =
                             left +
-                            i * spacing;
+                            (i + indexOffset) * spacing +
+                            spacing / 2;
 
                         const y =
                             priceY(
@@ -2272,7 +2346,7 @@
 
                         const x =
                             left +
-                            i * spacing +
+                            (i + indexOffset) * spacing +
                             spacing / 2;
 
                         const openY =
@@ -2313,7 +2387,7 @@
 
                         ctx.stroke();
 
-                        const w = Math.min(candleW, spacing * 0.85);
+                        const w = candleW;
 
                         ctx.fillRect(
                             x - w / 2,
@@ -2350,10 +2424,10 @@
 
                 drawMainMA(
                     values,
-                    view,
                     priceY,
                     left,
-                    plotW
+                    spacing,
+                    indexOffset
                 );
             }
 
@@ -2774,14 +2848,11 @@
 
         function drawMainMA(
             values,
-            bars,
             priceY,
             left,
-            plotW
+            spacing,
+            indexOffset
         ) {
-
-            const spacing =
-                plotW / bars.length;
 
             ctx.beginPath();
 
@@ -2795,7 +2866,7 @@
 
                     const x =
                         left +
-                        i * spacing +
+                        (i + indexOffset) * spacing +
                         spacing / 2;
 
                     const y =
@@ -2903,7 +2974,8 @@
 
             const {
                 start,
-                end
+                end,
+                visible: visibleCount
             } = getVisibleRange(
                 chartBars.length
             );
@@ -2929,7 +3001,8 @@
                 drawRSI(
                     fullPrices,
                     start,
-                    end
+                    end,
+                    visibleCount
                 );
 
             } else if (
@@ -2940,7 +3013,8 @@
                 drawMACD(
                     fullPrices,
                     start,
-                    end
+                    end,
+                    visibleCount
                 );
 
             } else if (
@@ -2951,7 +3025,8 @@
                 drawWindowMA(
                     fullPrices,
                     start,
-                    end
+                    end,
+                    visibleCount
                 );
             }
         }
@@ -3000,7 +3075,8 @@
         function drawRSI(
             fullPrices,
             start,
-            end
+            end,
+            visibleCount
         ) {
 
             const W =
@@ -3110,7 +3186,8 @@
                 y,
                 W,
                 H,
-                "#d8a5ff"
+                "#d8a5ff",
+                visibleCount
             );
 
             drawIndicatorLabel(
@@ -3127,7 +3204,8 @@
         function drawMACD(
             fullPrices,
             start,
-            end
+            end,
+            visibleCount
         ) {
 
             const W =
@@ -3227,6 +3305,10 @@
 
             const spacing =
                 histPlotW /
+                visibleCount;
+
+            const indexOffset =
+                visibleCount -
                 result.histogram.length;
 
             result.histogram.forEach(
@@ -3237,7 +3319,7 @@
 
                     const x =
                         histLeft +
-                        i * spacing +
+                        (i + indexOffset) * spacing +
                         spacing / 2;
 
                     const yy =
@@ -3270,7 +3352,8 @@
                 y,
                 W,
                 H,
-                "#45b9ff"
+                "#45b9ff",
+                visibleCount
             );
 
             drawIndicatorLine(
@@ -3278,7 +3361,8 @@
                 y,
                 W,
                 H,
-                "#ffc857"
+                "#ffc857",
+                visibleCount
             );
 
             drawIndicatorLabel(
@@ -3300,7 +3384,8 @@
         function drawWindowMA(
             fullPrices,
             start,
-            end
+            end,
+            visibleCount
         ) {
 
             const W =
@@ -3351,7 +3436,8 @@
                 y,
                 W,
                 H,
-                "#ffffff"
+                "#ffffff",
+                visibleCount
             );
 
             drawIndicatorLabel(
@@ -3370,7 +3456,8 @@
             y,
             W,
             H,
-            strokeColor
+            strokeColor,
+            visibleCount
         ) {
 
             if (!values.length)
@@ -3383,6 +3470,10 @@
 
             const spacing =
                 plotW /
+                (visibleCount || values.length);
+
+            const indexOffset =
+                (visibleCount || values.length) -
                 values.length;
 
             ictx.beginPath();
@@ -3401,7 +3492,7 @@
 
                     const x =
                         left +
-                        i * spacing +
+                        (i + indexOffset) * spacing +
                         spacing / 2;
 
                     const yy =
@@ -3465,6 +3556,96 @@
 
 
         /* =========================================================
+           GENERIC DROPDOWN HELPERS (Market / Chart Time / Chart / Expiry)
+        ========================================================= */
+
+        function closeAllDropMenus(except) {
+
+            document.querySelectorAll(
+                ".dropMenu, .indicatorMenu, .indicatorSettings, .logPanel"
+            ).forEach(
+                menu => {
+                    if (menu !== except) {
+                        menu.classList.remove("show");
+                    }
+                }
+            );
+
+            if (except !== $("logPanel")) {
+                $("logButton").textContent = "LOG ▼";
+            }
+        }
+
+        function setupDropdown(boxId, buttonId, menuId, onSelect, formatLabel) {
+
+            const box = $(boxId);
+            const button = $(buttonId);
+            const menu = $(menuId);
+
+            button.onclick = event => {
+
+                event.stopPropagation();
+
+                const willShow =
+                    !menu.classList.contains("show");
+
+                closeAllDropMenus(
+                    willShow ? menu : null
+                );
+
+                menu.classList.toggle(
+                    "show",
+                    willShow
+                );
+            };
+
+            menu.querySelectorAll(
+                "button[data-value]"
+            ).forEach(
+                item => {
+
+                    item.onclick = event => {
+
+                        event.stopPropagation();
+
+                        const value =
+                            event.currentTarget.dataset.value;
+
+                        menu.querySelectorAll(
+                            "button[data-value]"
+                        ).forEach(
+                            b => b.classList.remove("selected")
+                        );
+
+                        event.currentTarget.classList.add(
+                            "selected"
+                        );
+
+                        menu.classList.remove("show");
+
+                        button.textContent =
+                            (formatLabel ?
+                                formatLabel(value) :
+                                value) +
+                            " ▼";
+
+                        onSelect(value);
+                    };
+                }
+            );
+
+            document.addEventListener(
+                "click",
+                event => {
+                    if (!event.target.closest("#" + boxId)) {
+                        menu.classList.remove("show");
+                    }
+                }
+            );
+        }
+
+
+        /* =========================================================
            INDICATOR MENU
         ========================================================= */
 
@@ -3473,10 +3654,20 @@
 
                 event.stopPropagation();
 
-                $("indicatorMenu")
-                    .classList.toggle(
-                        "show"
-                    );
+                const menu =
+                    $("indicatorMenu");
+
+                const willShow =
+                    !menu.classList.contains("show");
+
+                closeAllDropMenus(
+                    willShow ? menu : null
+                );
+
+                menu.classList.toggle(
+                    "show",
+                    willShow
+                );
             };
 
 
@@ -3866,7 +4057,7 @@
             }
 
             const expiryValue =
-                $("tradeExpiry").value;
+                currentTradeExpiry;
 
             const exp =
                 expiryToObject(
@@ -3942,1940 +4133,4 @@
                             contract_type: contractType,
                             currency: accountCurrency,
                             duration: exp.duration,
-                            duration_unit: exp.unit,
-                            underlying_symbol: currentMarket,
-                            req_id: reqId
-                        })
-                    );
-                }
-            );
-        }
-
-
-        /* =========================================================
-           ACCOUNT TYPE
-        ========================================================= */
-
-        $("demoBtn").onclick =
-            () => {
-
-                if (connected) {
-
-                    disconnectAll();
-                }
-
-                selectedAccountType =
-                    "demo";
-
-                $("demoBtn")
-                    .classList.add(
-                        "active"
-                    );
-
-                $("liveBtn")
-                    .classList.remove(
-                        "active"
-                    );
-            };
-
-
-        $("liveBtn").onclick =
-            () => {
-
-                if (connected) {
-
-                    disconnectAll();
-                }
-
-                selectedAccountType =
-                    "live";
-
-                $("liveBtn")
-                    .classList.add(
-                        "active"
-                    );
-
-                $("demoBtn")
-                    .classList.remove(
-                        "active"
-                    );
-            };
-
-
-        /* =========================================================
-           GET ACCOUNTS
-        ========================================================= */
-
-        async function getAccounts() {
-
-            log(
-                "Requesting Deriv accounts...",
-                "info"
-            );
-
-            const response =
-                await fetch(
-                    API_BASE +
-                    "/trading/v1/options/accounts", {
-                        method: "GET",
-                        headers: {
-                            "Deriv-App-ID": APP_ID,
-                            "Authorization": "Bearer " + pat,
-                            "Accept": "application/json"
-                        }
-                    }
-                );
-
-            const json =
-                await response.json();
-
-            if (!response.ok) {
-
-                const message =
-                    json?.errors?.[0]?.message ||
-                    json?.message ||
-                    "Unable to retrieve Deriv Options accounts.";
-
-                throw new Error(message);
-            }
-
-            let result = [];
-
-            if (Array.isArray(json.data)) {
-                result = json.data;
-            } else if (json.data && Array.isArray(json.data.accounts)) {
-                result = json.data.accounts;
-            } else if (Array.isArray(json.accounts)) {
-                result = json.accounts;
-            } else if (json.data && (json.data.account_id || json.data.loginid)) {
-                result = [json.data];
-            }
-
-            if (!result.length) {
-                throw new Error("Deriv returned no Options accounts.");
-            }
-
-            return result;
-        }
-
-
-        /* =========================================================
-           FIND SELECTED ACCOUNT
-        ========================================================= */
-
-        function findSelectedAccount(
-            accounts
-        ) {
-
-            const wanted =
-                selectedAccountType ===
-                "demo" ?
-                "demo" :
-                "real";
-
-            let account =
-                accounts.find(
-                    a =>
-                    String(
-                        a.account_type ||
-                        ""
-                    ).toLowerCase() ===
-                    wanted
-                );
-
-            if (account) {
-                return account;
-            }
-
-            const prefix =
-                selectedAccountType ===
-                "demo" ?
-                "DOT" :
-                "CR";
-
-            account =
-                accounts.find(
-                    a =>
-                    String(
-                        a.account_id ||
-                        a.loginid ||
-                        ""
-                    ).toUpperCase()
-                    .startsWith(
-                        prefix
-                    )
-                );
-
-            return account ||
-                null;
-        }
-
-
-        /* =========================================================
-           OTP
-        ========================================================= */
-
-        async function getOTP(
-            account
-        ) {
-
-            log(
-                "Requesting session for account " +
-                account +
-                "...",
-                "info"
-            );
-
-            const response =
-                await fetch(
-                    API_BASE +
-                    "/trading/v1/options/accounts/" +
-                    encodeURIComponent(account) +
-                    "/otp", {
-                        method: "POST",
-                        headers: {
-                            "Deriv-App-ID": APP_ID,
-                            "Authorization": "Bearer " + pat,
-                            "Accept": "application/json"
-                        }
-                    }
-                );
-
-            const json =
-                await response.json();
-
-            if (!response.ok) {
-
-                const message =
-                    json?.errors?.[0]?.message ||
-                    json?.message ||
-                    "Unable to obtain Deriv trading WebSocket.";
-
-                throw new Error(message);
-            }
-
-            const url =
-                json?.data?.url;
-
-            if (!url) {
-
-                throw new Error(
-                    "Deriv did not return an authenticated WebSocket URL."
-                );
-            }
-
-            return url;
-        }
-
-
-        /* =========================================================
-           AUTHENTICATED WS
-        ========================================================= */
-
-        function openAuthenticatedWS(
-            url,
-            generation
-        ) {
-
-            return new Promise(
-                (resolve, reject) => {
-
-                    let settled = false;
-
-                    const ws =
-                        new WebSocket(url);
-
-                    authenticatedWS =
-                        ws;
-
-                    const timeout =
-                        setTimeout(
-                            () => {
-
-                                if (!settled) {
-
-                                    settled = true;
-
-                                    try {
-                                        ws.close();
-                                    } catch {}
-
-                                    reject(
-                                        new Error(
-                                            "Deriv trading connection timed out."
-                                        )
-                                    );
-                                }
-
-                            },
-                            15000
-                        );
-
-                    ws.onopen =
-                        () => {
-
-                            clearTimeout(timeout);
-
-                            if (
-                                generation !==
-                                connectionGeneration
-                            ) {
-
-                                try {
-                                    ws.close();
-                                } catch {}
-
-                                return;
-                            }
-
-                            if (!settled) {
-
-                                settled = true;
-
-                                resolve();
-                            }
-                        };
-
-                    ws.onerror =
-                        () => {
-
-                            clearTimeout(timeout);
-
-                            if (!settled) {
-
-                                settled = true;
-
-                                reject(
-                                    new Error(
-                                        "Deriv authenticated WebSocket connection failed."
-                                    )
-                                );
-                            }
-                        };
-
-                    ws.onclose =
-                        () => {
-
-                            if (ws !== authenticatedWS) {
-                                return;
-                            }
-
-                            if (connected) {
-
-                                connected = false;
-
-                                $("connectBtn")
-                                    .textContent =
-                                    "CONNECT";
-
-                                $("connectBtn")
-                                    .classList
-                                    .remove(
-                                        "connected"
-                                    );
-
-                                $("chartStatus")
-                                    .textContent =
-                                    "DISCONNECTED";
-
-                                log(
-                                    "Deriv trading connection closed.",
-                                    "warn"
-                                );
-                            }
-                        };
-
-                    ws.onmessage =
-                        event => {
-
-                            let data;
-
-                            try {
-                                data =
-                                    JSON.parse(
-                                        event.data
-                                    );
-                            } catch {
-                                return;
-                            }
-
-                            handleAuthenticatedMessage(
-                                data
-                            );
-                        };
-                }
-            );
-        }
-
-
-        /* =========================================================
-           AUTHENTICATED MESSAGE
-        ========================================================= */
-
-        function handleAuthenticatedMessage(data) {
-
-            if (data.error) {
-
-                log(
-                    data.error.message ||
-                    "Deriv trading API error.",
-                    "bad"
-                );
-
-                const failedTrade =
-                    pendingTrades.get(
-                        Number(data.req_id)
-                    );
-
-                if (failedTrade && failedTrade.btn) {
-
-                    unlockTradeButton(
-                        failedTrade.direction,
-                        failedTrade.btn,
-                        failedTrade.originalHTML
-                    );
-
-                    pendingTrades.delete(
-                        Number(data.req_id)
-                    );
-                }
-
-                return;
-            }
-
-            if (
-                data.msg_type ===
-                "balance"
-            ) {
-
-                const b =
-                    data.balance;
-
-                if (b) {
-
-                    $("balance")
-                        .textContent =
-                        "$" +
-                        Number(
-                            b.balance
-                        ).toFixed(2);
-                }
-
-                return;
-            }
-
-            if (
-                data.msg_type ===
-                "proposal"
-            ) {
-
-                handleProposal(data);
-
-                return;
-            }
-
-            if (
-                data.msg_type ===
-                "buy"
-            ) {
-
-                handleBuyResponse(data);
-
-                return;
-            }
-
-            if (
-                data.msg_type ===
-                "proposal_open_contract"
-            ) {
-
-                handleOpenContract(
-                    data.proposal_open_contract
-                );
-
-                return;
-            }
-
-            if (
-                data.msg_type ===
-                "tick"
-            ) {
-                return;
-            }
-        }
-
-
-        /* =========================================================
-           AUTHENTICATED SUBSCRIPTIONS
-        ========================================================= */
-
-        function subscribeAuthenticatedData() {
-
-            if (
-                !authenticatedWS ||
-                authenticatedWS.readyState !==
-                WebSocket.OPEN
-            ) {
-                return;
-            }
-
-            balanceSubscription =
-                req();
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    balance: 1,
-                    subscribe: 1,
-                    req_id: balanceSubscription
-                })
-            );
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    ticks: currentMarket,
-                    subscribe: 1,
-                    req_id: req()
-                })
-            );
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    portfolio: 1,
-                    req_id: req()
-                })
-            );
-
-            log(
-                "Account balance and trading streams started.",
-                "good"
-            );
-        }
-
-
-        /* =========================================================
-           TRADE BUTTONS
-        ========================================================= */
-
-        let tradeLock = {
-            RISE: false,
-            FALL: false
-        };
-
-        let lastTradeFire = {
-            RISE: 0,
-            FALL: 0
-        };
-
-        let lastTickTimestamp = 0;
-        let isPriceMoving = false;
-
-        function fireTrade(direction, event) {
-
-            if (event && event.cancelable) {
-                event.preventDefault();
-            }
-
-            if (!isPriceMoving && connected) {
-                log(
-                    "Price not moving — wait for live tick before trading.",
-                    "warn"
-                );
-                return;
-            }
-
-            const now =
-                Date.now();
-
-            if (
-                now - lastTradeFire[direction] <
-                600
-            ) {
-                return;
-            }
-
-            lastTradeFire[direction] =
-                now;
-
-            placeTrade(direction);
-        }
-
-        setInterval(() => {
-            const now = Date.now();
-            isPriceMoving = (now - lastTickTimestamp) < 5000;
-        }, 1000);
-
-        const origHandlePublicMessage = handlePublicMessage;
-        handlePublicMessage = function(data) {
-            if (data.msg_type === "tick" && data.tick) {
-                lastTickTimestamp = Date.now();
-                isPriceMoving = true;
-            }
-            origHandlePublicMessage(data);
-        };
-
-        ["riseBtn", "fallBtn"].forEach(
-            id => {
-
-                const direction =
-                    id === "riseBtn" ?
-                    "RISE" :
-                    "FALL";
-
-                const btn =
-                    $(id);
-
-                btn.addEventListener(
-                    "pointerdown",
-                    e => fireTrade(direction, e)
-                );
-
-                btn.addEventListener(
-                    "click",
-                    e => fireTrade(direction, e)
-                );
-            }
-        );
-
-
-        /* =========================================================
-           PLACE TRADE
-        ========================================================= */
-
-        function placeTrade(direction) {
-
-            if (tradeLock[direction]) {
-                return;
-            }
-
-            if (!connected) {
-
-                log(
-                    "Connect to Deriv before trading.",
-                    "bad"
-                );
-
-                return;
-            }
-
-            if (
-                !authenticatedWS ||
-                authenticatedWS.readyState !==
-                WebSocket.OPEN
-            ) {
-
-                log(
-                    "Trading connection is not ready.",
-                    "bad"
-                );
-
-                return;
-            }
-
-            const stake =
-                Number(
-                    $("stake").value
-                );
-
-            if (
-                !Number.isFinite(stake) ||
-                stake < 1
-            ) {
-
-                log(
-                    "Minimum stake is 1.",
-                    "bad"
-                );
-
-                return;
-            }
-
-            const expiry =
-                $("tradeExpiry").value;
-
-            const exp =
-                expiryToObject(
-                    expiry
-                );
-
-            const contractType =
-                direction === "RISE" ?
-                "CALL" :
-                "PUT";
-
-            tradeLock[direction] = true;
-
-            const btn =
-                direction === "RISE" ?
-                $("riseBtn") :
-                $("fallBtn");
-
-            const originalHTML =
-                btn.innerHTML;
-
-            btn.classList.add(
-                "sending"
-            );
-
-            btn.innerHTML =
-                "SENDING…";
-
-            /* FAST PATH: cached live proposal */
-
-            const key =
-                currentMarket +
-                "|" +
-                stake +
-                "|" +
-                exp.duration +
-                exp.unit;
-
-            const cached =
-                liveProposals[direction];
-
-            if (
-                cached &&
-                key === liveProposalKey &&
-                (Date.now() - cached.updatedAt) <
-                LIVE_PROPOSAL_MAX_AGE_MS
-            ) {
-
-                const buyReq =
-                    req();
-
-                pendingTrades.set(
-                    buyReq, {
-                        direction,
-                        stake,
-                        expiry,
-                        market: currentMarket,
-                        btn,
-                        originalHTML,
-                        buyReq: true
-                    }
-                );
-
-                authenticatedWS.send(
-                    JSON.stringify({
-                        buy: cached.id,
-                        price: cached.price,
-                        req_id: buyReq
-                    })
-                );
-
-                log(
-                    "Fast entry: " +
-                    direction +
-                    " (live price).",
-                    "info"
-                );
-
-                setTimeout(
-                    () => {
-                        if (
-                            tradeLock[direction] &&
-                            btn.classList.contains(
-                                "sending"
-                            )
-                        ) {
-                            unlockTradeButton(
-                                direction,
-                                btn,
-                                originalHTML
-                            );
-                        }
-                    },
-                    8000
-                );
-
-                return;
-            }
-
-            /* FALLBACK: request proposal */
-
-            const request =
-                req();
-
-            pendingTrades.set(
-                request, {
-                    direction,
-                    stake,
-                    expiry,
-                    market: currentMarket,
-                    btn,
-                    originalHTML,
-                    proposalReq: true
-                }
-            );
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    proposal: 1,
-                    amount: stake,
-                    basis: "stake",
-                    contract_type: contractType,
-                    currency: accountCurrency,
-                    duration: exp.duration,
-                    duration_unit: exp.unit,
-                    underlying_symbol: currentMarket,
-                    req_id: request
-                })
-            );
-
-            log(
-                "Requesting Deriv " +
-                direction +
-                " proposal...",
-                "info"
-            );
-
-            setTimeout(
-                () => {
-                    if (
-                        tradeLock[direction] &&
-                        btn.classList.contains(
-                            "sending"
-                        )
-                    ) {
-                        unlockTradeButton(
-                            direction,
-                            btn,
-                            originalHTML
-                        );
-                    }
-                },
-                8000
-            );
-        }
-
-
-        function unlockTradeButton(
-            direction,
-            btn,
-            originalHTML
-        ) {
-
-            tradeLock[direction] = false;
-
-            btn.classList.remove(
-                "sending"
-            );
-
-            btn.innerHTML =
-                originalHTML;
-        }
-
-
-        /* =========================================================
-           PROPOSAL
-        ========================================================= */
-
-        function handleProposal(data) {
-
-            const proposal =
-                data.proposal;
-
-            if (!proposal)
-                return;
-
-            const reqId =
-                Number(data.req_id);
-
-            /* Background live-stream update */
-
-            const liveDirection =
-                liveProposalReqIds[reqId];
-
-            if (liveDirection) {
-
-                const liveAsk =
-                    Number(
-                        proposal.ask_price
-                    );
-
-                if (
-                    proposal.id &&
-                    Number.isFinite(liveAsk)
-                ) {
-
-                    liveProposals[
-                        liveDirection
-                    ] = {
-                        id: proposal.id,
-                        price: liveAsk,
-                        updatedAt: Date.now()
-                    };
-
-                    if (
-                        data.subscription &&
-                        data.subscription.id
-                    ) {
-
-                        liveProposalSubIds[
-                            liveDirection
-                        ] =
-                        data.subscription.id;
-                    }
-                }
-
-                return;
-            }
-
-            const trade =
-                pendingTrades.get(reqId);
-
-            if (!trade)
-                return;
-
-            pendingTrades.delete(reqId);
-
-            const askPrice =
-                Number(
-                    proposal.ask_price
-                );
-
-            if (
-                !proposal.id ||
-                !Number.isFinite(askPrice)
-            ) {
-
-                log(
-                    "Invalid Deriv proposal.",
-                    "bad"
-                );
-
-                if (trade.btn) {
-
-                    unlockTradeButton(
-                        trade.direction,
-                        trade.btn,
-                        trade.originalHTML
-                    );
-                }
-
-                return;
-            }
-
-            const buyReq =
-                req();
-
-            pendingTrades.set(
-                buyReq, {
-                    ...trade,
-                    proposalId: proposal.id,
-                    askPrice,
-                    buyReq: true
-                }
-            );
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    buy: proposal.id,
-                    price: askPrice,
-                    req_id: buyReq
-                })
-            );
-        }
-
-
-        /* =========================================================
-           BUY
-        ========================================================= */
-
-        function handleBuyResponse(data) {
-
-            const buy =
-                data.buy;
-
-            if (!buy)
-                return;
-
-            let trade =
-                pendingTrades.get(
-                    Number(data.req_id)
-                );
-
-            if (!trade) {
-
-                for (
-                    const [key, value] of pendingTrades
-                ) {
-
-                    if (
-                        value &&
-                        value.buyReq
-                    ) {
-
-                        trade =
-                            value;
-
-                        pendingTrades.delete(
-                            key
-                        );
-
-                        break;
-                    }
-                }
-
-                if (!trade) {
-
-                    log(
-                        "Received buy response without matching request.",
-                        "warn"
-                    );
-
-                    return;
-                }
-            } else {
-
-                pendingTrades.delete(
-                    Number(data.req_id)
-                );
-            }
-
-            if (trade.btn) {
-
-                unlockTradeButton(
-                    trade.direction,
-                    trade.btn,
-                    trade.originalHTML
-                );
-            }
-
-            if (!buy.contract_id) {
-
-                log(
-                    "No contract ID returned by Deriv.",
-                    "bad"
-                );
-
-                return;
-            }
-
-            const position = {
-
-                id: buy.contract_id,
-                contractId: buy.contract_id,
-                market: trade.market || currentMarket,
-                direction: trade.direction,
-                stake: trade.stake,
-                entrySpot: null,
-                profit: 0,
-                expiryTime: null,
-                buyPrice: Number(
-                    buy.buy_price ||
-                    trade.askPrice ||
-                    0
-                ),
-                status: "open"
-            };
-
-            positions.push(
-                position
-            );
-
-            renderPositions();
-
-            drawChart();
-
-            log(
-                "Opened " +
-                trade.direction +
-                " position on " +
-                (trade.market || currentMarket) +
-                ".",
-                "good"
-            );
-
-            authenticatedWS.send(
-                JSON.stringify({
-                    proposal_open_contract: 1,
-                    contract_id: position.id,
-                    subscribe: 1,
-                    req_id: req()
-                })
-            );
-        }
-
-
-        /* =========================================================
-           OPEN CONTRACT — updates daily PL and logs result
-        ========================================================= */
-
-        function handleOpenContract(contract) {
-
-            if (!contract)
-                return;
-
-            const id =
-                String(
-                    contract.contract_id
-                );
-
-            const position =
-                positions.find(
-                    p =>
-                    String(p.id) === id
-                );
-
-            if (!position)
-                return;
-
-            if (
-                contract.entry_spot != null
-            ) {
-                position.entrySpot =
-                    Number(
-                        contract.entry_spot
-                    );
-            }
-
-            if (
-                contract.date_expiry != null
-            ) {
-                position.expiryTime =
-                    Number(
-                        contract.date_expiry
-                    ) * 1000;
-            }
-
-            if (
-                contract.profit != null
-            ) {
-                position.profit =
-                    Number(
-                        contract.profit
-                    );
-            }
-
-            position.status =
-                contract.status ||
-                (
-                    contract.is_sold ?
-                    "sold" :
-                    "open"
-                );
-
-            renderPositions();
-
-            drawChart();
-
-            if (
-                contract.is_sold ||
-                contract.status === "sold" ||
-                contract.status === "won" ||
-                contract.status === "lost"
-            ) {
-
-                const profitAmt =
-                    Number(
-                        contract.profit ||
-                        position.profit ||
-                        0
-                    );
-
-                /* Update daily P&L */
-                addToDailyPL(profitAmt);
-
-                log(
-                    position.direction +
-                    " settled: " +
-                    (
-                        profitAmt >= 0 ?
-                        "WIN " :
-                        "LOSS "
-                    ) +
-                    profitAmt.toFixed(2),
-                    profitAmt >= 0 ?
-                    "good" :
-                    "bad"
-                );
-
-                /* Remove immediately */
-                positions =
-                    positions.filter(
-                        p =>
-                        String(p.id) !== id
-                    );
-
-                renderPositions();
-                drawChart();
-            }
-        }
-
-
-        /* =========================================================
-           LOCAL EXPIRY WATCHER — removes expired positions
-        ========================================================= */
-
-        setInterval(() => {
-            const now = Date.now();
-            let removed = false;
-            positions = positions.filter(p => {
-                if (p.expiryTime && p.expiryTime <= now) {
-                    removed = true;
-                    log(
-                        p.direction +
-                        " position expired (local timer).",
-                        "warn"
-                    );
-                    return false;
-                }
-                return true;
-            });
-            if (removed) {
-                renderPositions();
-                drawChart();
-            }
-        }, 500);
-
-
-        /* =========================================================
-           MARKET CHANGE
-        ========================================================= */
-
-        function changeMarket(symbol) {
-
-            if (!symbol)
-                return;
-
-            currentMarket =
-                symbol;
-
-            $("marketSelect")
-                .value =
-                symbol;
-
-            tickHistory = [];
-            chartBars = [];
-            currentTick = null;
-            panOffset = 0;
-
-            $("livePrice")
-                .textContent =
-                "--";
-
-            $("chartMarketName")
-                .textContent =
-                symbol;
-
-            if (
-                publicWS &&
-                publicWS.readyState ===
-                WebSocket.OPEN
-            ) {
-
-                if (tickSubscription) {
-                    try {
-                        publicWS.send(
-                            JSON.stringify({
-                                forget: tickSubscription
-                            })
-                        );
-                    } catch {}
-                }
-
-                subscribeMarketData();
-
-            } else if (connected) {
-
-                openPublicWS();
-            }
-
-            if (
-                authenticatedWS &&
-                authenticatedWS.readyState ===
-                WebSocket.OPEN
-            ) {
-
-                try {
-                    authenticatedWS.send(
-                        JSON.stringify({
-                            ticks: currentMarket,
-                            subscribe: 1,
-                            req_id: req()
-                        })
-                    );
-                } catch {}
-            }
-
-            refreshLiveProposals();
-
-            drawChart();
-        }
-
-
-        /* =========================================================
-           CHART TIME
-        ========================================================= */
-
-        function changeChartTime(mode) {
-
-            currentChartMode =
-                mode;
-
-            $("chartTime")
-                .value =
-                mode;
-
-            panOffset = 0;
-
-            updateChartFromTicks();
-        }
-
-
-        /* =========================================================
-           SELECT EVENTS
-        ========================================================= */
-
-        $("marketSelect").onchange =
-            e =>
-            changeMarket(
-                e.target.value
-            );
-
-        $("chartTime").onchange =
-            e =>
-            changeChartTime(
-                e.target.value
-            );
-
-        $("chartStyle").onchange =
-            e => {
-
-                currentChartStyle =
-                    e.target.value;
-
-                drawChart();
-            };
-
-
-        /* =========================================================
-           EXPIRY
-        ========================================================= */
-
-        $("tradeExpiry").onchange =
-            function() {
-
-                if (
-                    this.value ===
-                    "custom"
-                ) {
-
-                    const value =
-                        prompt(
-                            "Enter custom expiry in seconds:",
-                            "300"
-                        );
-
-                    const seconds =
-                        Number(value);
-
-                    if (
-                        !Number.isFinite(seconds) ||
-                        seconds <= 0
-                    ) {
-
-                        this.value =
-                            "5m";
-
-                    } else {
-
-                        customExpirySeconds =
-                            Math.floor(seconds);
-                    }
-                }
-
-                currentTradeExpiry =
-                    this.value;
-
-                refreshLiveProposals();
-            };
-
-
-        /* =========================================================
-           STAKE INPUT
-        ========================================================= */
-
-        let stakeDebounceTimer = null;
-
-        $("stake").addEventListener(
-            "input",
-            () => {
-
-                clearTimeout(
-                    stakeDebounceTimer
-                );
-
-                stakeDebounceTimer =
-                    setTimeout(
-                        refreshLiveProposals,
-                        500
-                    );
-            }
-        );
-
-
-        /* =========================================================
-           ZOOM
-        ========================================================= */
-
-        $("zoomIn").onclick =
-            () => {
-
-                zoomLevel =
-                    Math.min(
-                        4,
-                        zoomLevel * 1.25
-                    );
-
-                drawChart();
-                updateIndicatorWindow();
-            };
-
-
-        $("zoomOut").onclick =
-            () => {
-
-                zoomLevel =
-                    Math.max(
-                        .5,
-                        zoomLevel / 1.25
-                    );
-
-                drawChart();
-                updateIndicatorWindow();
-            };
-
-
-        /* =========================================================
-           CHART DRAG
-        ========================================================= */
-
-        viewport.addEventListener(
-            "pointerdown",
-            event => {
-
-                dragging = true;
-
-                dragStartX =
-                    event.clientX;
-
-                dragStartPan =
-                    panOffset;
-
-                try {
-                    viewport.setPointerCapture(
-                        event.pointerId
-                    );
-                } catch {}
-            }
-        );
-
-
-        viewport.addEventListener(
-            "pointermove",
-            event => {
-
-                if (!dragging)
-                    return;
-
-                const dx =
-                    event.clientX -
-                    dragStartX;
-
-                const barsPerPixel =
-                    Math.max(
-                        .08,
-                        90 /
-                        Math.max(
-                            100,
-                            viewport.clientWidth
-                        )
-                    );
-
-                panOffset =
-                    dragStartPan +
-                    Math.round(
-                        dx *
-                        barsPerPixel *
-                        -1
-                    );
-
-                const maxPan =
-                    Math.max(
-                        0,
-                        chartBars.length - 20
-                    );
-
-                panOffset =
-                    Math.max(
-                        0,
-                        Math.min(
-                            maxPan,
-                            panOffset
-                        )
-                    );
-
-                drawChart();
-            }
-        );
-
-
-        viewport.addEventListener(
-            "pointerup",
-            () => {
-                dragging = false;
-            }
-        );
-
-        viewport.addEventListener(
-            "pointercancel",
-            () => {
-                dragging = false;
-            }
-        );
-
-
-        /* =========================================================
-           DISCONNECT ALL
-        ========================================================= */
-
-        function disconnectAll() {
-
-            connectionGeneration++;
-
-            connected = false;
-
-            shouldStayConnected = false;
-
-            try {
-                if (authenticatedWS) {
-                    authenticatedWS.onclose = null;
-                    authenticatedWS.close();
-                }
-            } catch {}
-
-            try {
-                if (publicWS) {
-                    publicWS.onclose = null;
-                    publicWS.close();
-                }
-            } catch {}
-
-            authenticatedWS = null;
-            publicWS = null;
-
-            accountId = null;
-            accountCurrency = "USD";
-            tickSubscription = null;
-            balanceSubscription = null;
-
-            liveProposals = {
-                RISE: null,
-                FALL: null
-            };
-
-            liveProposalReqIds = {};
-            liveProposalSubIds = {
-                RISE: null,
-                FALL: null
-            };
-            liveProposalKey = null;
-
-            pendingTrades.clear();
-            positions = [];
-
-            tickHistory = [];
-            chartBars = [];
-            currentTick = null;
-
-            $("connectBtn")
-                .textContent =
-                "CONNECT";
-
-            $("connectBtn")
-                .classList
-                .remove(
-                    "connected"
-                );
-
-            $("chartStatus")
-                .textContent =
-                "DISCONNECTED";
-
-            $("balance")
-                .textContent =
-                "--";
-
-            $("livePrice")
-                .textContent =
-                "--";
-
-            renderPositions();
-
-            drawChart();
-
-            log(
-                "Disconnected.",
-                "warn"
-            );
-        }
-
-
-        /* =========================================================
-           CONNECT
-        ========================================================= */
-
-        async function connectToDeriv(isAutoRetry) {
-
-            if (!isAutoRetry) {
-
-                pat =
-                    $("pat")
-                    .value
-                    .trim();
-            }
-
-            if (!pat) {
-
-                log(
-                    "Paste your PAT before connecting.",
-                    "bad"
-                );
-
-                return false;
-            }
-
-            if (!isAutoRetry) {
-
-                $("connectBtn")
-                    .disabled =
-                    true;
-            }
-
-            const generation =
-                ++connectionGeneration;
-
-            $("chartStatus")
-                .textContent =
-                isAutoRetry ?
-                "RECONNECTING" :
-                "AUTHENTICATING";
-
-            try {
-
-                accountId = null;
-                accountCurrency = "USD";
-                pendingTrades.clear();
-                positions = [];
-                renderPositions();
-
-                const accounts =
-                    await getAccounts();
-
-                if (
-                    generation !==
-                    connectionGeneration
-                ) {
-                    return false;
-                }
-
-                const account =
-                    findSelectedAccount(
-                        accounts
-                    );
-
-                if (!account) {
-
-                    throw new Error(
-                        "No " +
-                        selectedAccountType.toUpperCase() +
-                        " Options account found for this PAT."
-                    );
-                }
-
-                accountId =
-                    account.account_id ||
-                    account.loginid ||
-                    account.id;
-
-                if (!accountId) {
-
-                    throw new Error(
-                        "Deriv account ID was not returned."
-                    );
-                }
-
-                accountCurrency =
-                    account.currency ||
-                    "USD";
-
-                const wsUrl =
-                    await getOTP(
-                        accountId
-                    );
-
-                if (
-                    generation !==
-                    connectionGeneration
-                ) {
-                    return false;
-                }
-
-                await openAuthenticatedWS(
-                    wsUrl,
-                    generation
-                );
-
-                if (
-                    generation !==
-                    connectionGeneration
-                ) {
-                    return false;
-                }
-
-                connected = true;
-
-                shouldStayConnected = true;
-
-                reconnectAttempts = 0;
-
-                $("connectBtn")
-                    .textContent =
-                    "CONNECTED";
-
-                $("connectBtn")
-                    .classList
-                    .add(
-                        "connected"
-                    );
-
-                $("chartStatus")
-                    .textContent =
-                    "CONNECTED";
-
-                subscribeAuthenticatedData();
-
-                openPublicWS();
-
-                liveProposalKey = null;
-
-                refreshLiveProposals();
-
-                log(
-                    (isAutoRetry ?
-                        "Reconnected - " :
-                        "") +
-                    selectedAccountType
-                    .toUpperCase() +
-                    " Deriv account connected.",
-                    "good"
-                );
-
-                return true;
-
-            } catch (error) {
-
-                if (
-                    generation ===
-                    connectionGeneration
-                ) {
-
-                    connected = false;
-
-                    $("connectBtn")
-                        .textContent =
-                        "CONNECT";
-
-                    $("connectBtn")
-                        .classList
-                        .remove(
-                            "connected"
-                        );
-
-                    $("chartStatus")
-                        .textContent =
-                        isAutoRetry ?
-                        "RECONNECT FAILED" :
-                        "CONNECTION FAILED";
-
-                    $("balance")
-                        .textContent =
-                        "--";
-
-                    log(
-                        error.message ||
-                        "Connection failed.",
-                        "bad"
-                    );
-                }
-
-                return false;
-
-            } finally {
-
-                if (
-                    !isAutoRetry &&
-                    generation ===
-                    connectionGeneration
-                ) {
-
-                    $("connectBtn")
-                        .disabled =
-                        false;
-                }
-            }
-        }
-
-
-        /* =========================================================
-           CONNECT BUTTON
-        ========================================================= */
-
-        $("connectBtn").onclick =
-            async () => {
-
-                if (connected) {
-
-                    shouldStayConnected = false;
-
-                    disconnectAll();
-
-                    return;
-                }
-
-                await connectToDeriv(false);
-            };
-
-
-        /* =========================================================
-           AUTO-RECONNECT
-        ========================================================= */
-
-        setInterval(
-            () => {
-
-                if (
-                    !shouldStayConnected ||
-                    reconnecting
-                ) {
-                    return;
-                }
-
-                const authDead =
-                    !authenticatedWS ||
-                    authenticatedWS.readyState !==
-                    WebSocket.OPEN;
-
-                const pubDead =
-                    !publicWS ||
-                    publicWS.readyState !==
-                    WebSocket.OPEN;
-
-                if (
-                    !authDead &&
-                    pubDead
-                ) {
-
-                    log(
-                        "Live price stream dropped - reconnecting...",
-                        "warn"
-                    );
-
-                    openPublicWS();
-
-                    return;
-                }
-
-                if (authDead) {
-
-                    reconnecting = true;
-
-                    reconnectAttempts++;
-
-                    log(
-                        "Connection lost - attempting to reconnect (#" +
-                        reconnectAttempts +
-                        ")...",
-                        "warn"
-                    );
-
-                    connectToDeriv(true)
-                        .finally(
-                            () => {
-                                reconnecting = false;
-                            }
-                        );
-                }
-            },
-            2000
-        );
-
-
-        /* =========================================================
-           LOG TOGGLE
-        ========================================================= */
-
-        $("logButton").onclick =
-            () => {
-
-                const panel =
-                    $("logPanel");
-
-                panel.classList.toggle(
-                    "show"
-                );
-
-                $("logButton")
-                    .textContent =
-                    panel.classList.contains(
-                        "show"
-                    ) ?
-                    "LOG ▲" :
-                    "LOG ▼";
-            };
-
-
-        /* =========================================================
-           COUNTDOWN TICKER
-        ========================================================= */
-
-        setInterval(
-            () => {
-                renderPositions();
-                drawChart();
-            },
-            500
-        );
-
-
-        /* =========================================================
-           INITIALIZE
-        ========================================================= */
-
-        $("chartMarketName")
-            .textContent =
-            currentMarket;
-
-        $("chartInfoText")
-            .textContent =
-            "Deriv live 1M";
-
-        resetDailyPLIfNeeded();
-        updateDailyPLDisplay();
-
-        resizeCanvas();
-
-        drawChart();
-
-        renderPositions();
-
-        log(
-            "Ready. Paste PAT, choose DEMO/LIVE and connect.",
-            "info"
-        );
-
-    </script>
-
-</body>
-</html>
+              
